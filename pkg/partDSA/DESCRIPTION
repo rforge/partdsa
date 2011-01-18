@@ -9,5 +9,5 @@ Maintainer: Annette Molinaro <annette.molinaro@yale.edu>
 Description: partDSA is a novel tool for generating a piecewise constant
         estimation list of increasingly complex predictors based on an
         intensive and comprehensive search over the entire covariate space.
-Depends: R (>= 2.5), nws
+Depends: R (>= 2.5), nws, survival
 License: GPL-2
