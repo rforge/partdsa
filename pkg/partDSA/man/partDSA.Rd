@@ -18,7 +18,8 @@ the user an additional tool for their statistical toolbox.
 partDSA(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         control=DSA.control(), sleigh)
 DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
-            missing="default", loss.function="default")
+            missing="default", loss.function="default",
+            wt.method = "KM", brier.vec = NULL)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -69,6 +70,8 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 \item{loss.function}{The function to be minimized when building the model.
  For categorical outcomes, "entropy" (default) or "gini" can be specified.
  For continuous outcomes, the L2 loss function is used.}
+\item{wt.method}{Not documented yet.}
+\item{brier.vec}{Not documented yet.}
 }
 \details{
 \code{missing} set to "no" indicates that there is no missing data and
