@@ -1,31 +1,44 @@
 rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
-                    MPD=0.1, missing="no", loss.function="default") {
-  p <- ncol(x)
-  n <- nrow(x)
+                    MPD=0.1, missing="no", loss.function="default",control) {
+  
+  p <- ncol(x) #The number of variables as each variable corresponds to a column
+  n <- nrow(x) #The number of rows as each row
 
   if (is.data.frame(x)) {
     ## get the levels of each factor in the input data frame
     var.levels <- lapply(x, function(i) if (is.factor(i)) levels(i) else NULL)
+    
     #is.num remembers the original class for each predictor variable
+    #specifically, is.num[i] is equal to 1 if variable i is numeric
+    #and it is 0 if variable i is categorical
     is.num <- unlist(lapply(x,function(i) if (is.factor(i)) 0 else 1))
 
     ## convert any columns that are factors into numeric vectors
+    
+    ##If statement checks if any variables are categorical.
     if (any(unlist(lapply(var.levels, function(i) !is.null(i))))) {
-      if (FALSE)
+     
+      if (FALSE) ## Won't this NEVER execute? Why have this conditon?
         warning('converting some columns from factors to double vectors')
+      ##replaces the category with a number. EG: If "a", "b", "c", would be replaced with
+      ##1,2,3 where "1,2,3" are actual numbers.
       x <- do.call('data.frame', lapply(x, function(i) {
         if (is.factor(i)) as.numeric(i) else i
       }))
     }
-  } else {
+  } else { #not sure when X would not be a dataframe?
+  		   #worker makes x a dataframe by default
     var.levels <- vector('list', length=p)
     is.num <- unlist(lapply(x,function(i) if (is.factor(i)) 0 else 1))
   }
   var.names <- colnames(x)
+  
+  #Assigns names X1 to Xn if names is blank
+  #As X is created to be a dataframe by Worker, can it really ever be blank??
   if (is.null(var.names))
     var.names <- sprintf('X%d', seq(length=ncol(x)))
-
   ## create an imputed x.temp matrix for an initial vector of all 1's
+  ##Still need to figure out how this works!!!
   x.temp <- update.missing(x,x,y,rep(1,dim(x)[1]), is.num=is.num,todo="d",
                            missing=missing)
 
@@ -37,10 +50,13 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   keep.rss.risks <- list()
 
   ## make list for basis fxs (called dynBF - as it is dyname BF holder)
+  ##Unclear why hold such a complicated list of functions
+  ##newLIST is located in newfunctions.r
   dynBF <- keep.bas.fx[[1]] <- newLIST(p=p)
 
   ## f.Io is the best RSS yet
   ## keep.rss.risks is the best
+  ##ass.obs.to.bf is located in newfunctions.R
   bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
 
   if (is.factor(y)) {
@@ -68,6 +84,8 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   }
 
   opts <- list(loss.fx = loss.fx, outcome.class=outcome.class)
+  
+  #risk.fx is in newfunctions.R
   f.Io <- risk.fx(bas.fx=bas.fx, y=y, wt=wt,opts=opts)
 
   keep.rss.risks[[1]] <- f.Io
@@ -77,7 +95,11 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   repeat {
     ## DEL(I)
     dbug('starting deletion')
+    
+    ##hasn't this already been converted to a dataframe?
     bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
+    
+    #check.del ins in delete.R
     try.del <- check.del(bas.fx=bas.fx, y=y, wt=wt, real.LIST=dynBF, opts=opts)
 
     ## is it better than the best of the same size?
@@ -110,7 +132,7 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
       bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
 
       try.sub.g <- subst(bas.fx=bas.fx, y=y, wt=wt, dat=x, minbuck=minbuck,
-                         real.LIST=dynBF, opts=opts, x.temp=x.temp,is.num=is.num)
+                         real.LIST=dynBF, opts=opts, x.temp=x.temp,is.num=is.num, control)
 
       best.sub <- try.sub.g$best.of.subs
       sub.risk <- try.sub.g$sub.risk
@@ -283,6 +305,76 @@ predict.dsa <- function(object, newdata, ...) {
   } else {
     stop('illegal outcome class')
   }
+}
+
+predict.LeafyDSA<-function(results,x,y, wt,...){
+
+	if(is.factor(y)){
+		decision.rules<-results[[9]]
+		}
+	else{
+		decision.rules<-results[[7]]
+		}
+	
+	########HERE
+	##Discuss with Karen 
+	#x<-impute.test(x=x,y=y,x.test = x, y.test = y, missing = missing)
+	
+	#gets the max value per decision rule and saves it
+	get.max.value.from.decision.rule<- function(current.decision.rule){
+			length(current.decision.rule[[5]])
+		}
+	max.growth<-lapply(decision.rules,get.max.value.from.decision.rule)
+	
+	#does the prediction for partition size 1 to max value
+	all.predicted.values<-lapply(decision.rules,predict, x)
+			
+	if(is.factor(y)){
+  		y.original <- y
+  		y<- ConvertFactorsToNumeric(y.original)
+  			
+  		#gets the predicted value based upon the max partition for that tree
+  		predicted.values.for.max.growth<-mapply(function(x1,x2)  x1[[x2]]  ,all.predicted.values,max.growth, 										SIMPLIFY=FALSE)
+  			  					
+		convert.from.factor<-function(x){
+								as.numeric(levels(x))[as.integer(x)]
+							}
+								
+		#converts the predicted values into numbers so the computations below work
+		predicted.values.for.max.growth<-lapply(predicted.values.for.max.growth,convert.from.factor)
+	
+		overall.pred.values <- apply(array(unlist(predicted.values.for.max.growth), dim = c(length							   (predicted.values.for.max.growth[[1]]),1, length		      				   (predicted.values.for.max.growth))), 1:2,							   MatrixMode)
+	
+			
+		error<-categorical.error(overall.pred.values,y)
+			
+		#converts back to factor form so the confusion matrix shows the original type of y values
+		overall.pred.values<- as.factor(Mapper(overall.pred.values,levels(y.original)))
+		confusion.matrix<-create.confusion.matrix(y.original,overall.pred.values)
+	
+		categorical.results<- list(list("Prediction Error Rate", error),
+							  list("Predicted Values", overall.pred.values),
+							  list("Confusion Matrix", confusion.matrix))
+		class(categorical.results)<-c('LeafyPredictions')
+		return(categorical.results)
+
+	}
+	
+	else{
+		#gets the predicted value based upon the max partition for that tree
+		predicted.values.for.max.growth<-mapply(function(x1,x2)x1												[,x2],all.predicted.values,max.growth,SIMPLIFY=FALSE)
+		
+		#puts in the correct for to send to numerical.predicted.value.and.error
+		predicted.values.for.max.growth<-lapply(predicted.values.for.max.growth, as.matrix)
+		  	
+		
+		calculated.results<- numerical.predicted.value.and.error(predicted.values.for.max.growth,y, wt)
+		numerical.results<-list(list("Prediction Error Rate",calculated.results[[2]][[2]]),								list("Predicted Values", calculated.results[[1]][[2]]))
+		class(numerical.results)<- c('LeafyPredictions')
+		return(numerical.results)
+
+		}
+	
 }
 
 computeVariableImportance <- function(IkPn, var.names) {

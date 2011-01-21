@@ -41,7 +41,7 @@ best.bfs.to.combine <- function(bas.fx, y, wt, opts) {
     pick.m <- which.min(all.combo)[1]
     bf.2 <- ceiling(pick.m / (M-1))
     bf.1 <- pick.m - ((M-1) * (bf.2-1))
-  } else {
+  } else { ##there is nothing to combine. All one basis fucntion.
     bf.1 <- bf.2 <- index.min <- NULL
   }
 

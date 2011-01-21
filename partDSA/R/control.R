@@ -1,5 +1,17 @@
-DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
-                        missing="no", loss.function="default") {
+DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1, missing="impute.at.split", loss.function="default", leafy = 0, leafy.random.num.variables.per.split = 4, leafy.num.trees = 50) {
+  
+  if(leafy == 1 && (!is.wholenumber(leafy.num.trees)))
+  	stop('The number of trees must be a whole number')
+	
+  if(leafy == 1 && (!is.wholenumber(leafy.random.num.variables.per.split)))
+  	stop('The number of random variables per split must be a whole number')
+  	
+  if(leafy == 1 && (leafy.num.trees<= 0))
+  	stop('The number of trees must be greater than 0')
+  
+  if(leafy == 1 && (leafy.random.num.variables.per.split<= 0))
+  	stop('The number of random variables per split must be greater than 0')
+  	
   if (!is.numeric(vfold) || length(vfold) > 1 || vfold < 1)
     stop('vfold must be a numeric value >= 1')
 
@@ -20,5 +32,5 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
     stop('loss.function must be a character value')
 
   list(vfold=vfold, minbuck=minbuck, cut.off.growth=cut.off.growth,
-       MPD=MPD, missing=missing, loss.function=loss.function)
+       MPD=MPD, missing=missing, loss.function=loss.function, leafy = leafy, leafy.random.num.variables.per.split = leafy.random.num.variables.per.split, leafy.num.trees = leafy.num.trees)
 }

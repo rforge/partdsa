@@ -1,4 +1,151 @@
- add.bas.fx <- function(BFs, new.add, m) {
+categorical.predictions<- function(predicted.values.by.tree,predicted.test.set.values.by.tree,y,y.test,x,x.test,
+								   y.original, y.test.original){
+	
+	overall.pred.values <- apply(array(unlist(predicted.values.by.tree), dim = c(dim								   (predicted.values.by.tree[[1]]), length(predicted.values.by.tree))), 1:2,								   MatrixMode)
+	training.set.error<- categorical.error(overall.pred.values,y)
+	
+	overall.pred.values<- as.factor(Mapper(overall.pred.values,levels(y.original)))
+	confusion.matrix.training.set<-create.confusion.matrix(y.original,overall.pred.values)
+			
+			
+	#if test set and training set are identical, return NA for the test set.
+	test.set.error <- NA
+	confusion.matrix.test.set<- NA
+	overall.test.set.pred.values<-NA	
+	
+	if(!identical(x,x.test)){
+		overall.test.set.pred.values<-apply(array(unlist(predicted.test.set.values.by.tree), dim = c(dim				    				  (predicted.test.set.values.by.tree[[1]]), 
+									  length(predicted.test.set.values.by.tree))), 1:2,MatrixMode)
+		test.set.error<-categorical.error(overall.test.set.pred.values,y.test)
+		overall.test.set.pred.values<-as.factor(Mapper(overall.test.set.pred.values,levels(y.test.original)))
+		confusion.matrix.test.set <- create.confusion.matrix(y.test.original, overall.test.set.pred.values)
+	}
+	
+	categorical.results<- list(list("Traing Set Error:", training.set.error),
+  						  list("Predicted Training Set Values:", overall.pred.values),
+  						  list ("Predicted Test Set Values", overall.test.set.pred.values), 
+  						  list("Test Set Error:", test.set.error),
+  						  list("Training Set Confusion Matrix", confusion.matrix.training.set),
+  						  list("Test Set Confusion Matrix", confusion.matrix.test.set),
+  						  list("Overall Training Set Predicted Values", overall.pred.values),
+  						  list("Overall Test Set Predicted Values", overall.test.set.pred.values))
+  	return(categorical.results)
+}
+
+categorical.error<-function(overall.pred.values,y){
+	temp <- (y != overall.pred.values)
+	values.not.equal<- apply(temp, 2, sum, na.rm = TRUE)
+	value.counts<- !is.na(overall.pred.values)
+	total.values<- apply(value.counts,2, sum, na.rm = TRUE)
+	error<- values.not.equal / total.values						   
+	return(error)
+	
+	}
+
+numerical.predictions<- function(predicted.values.by.tree,predicted.test.set.values.by.tree,y,y.test,x,x.test,wt,wt.test){
+	
+	training.set.results<-numerical.predicted.value.and.error(predicted.values.by.tree,y,wt)
+	
+	#if test set and training set are identical, return NA for the test set.        
+	test.set.error<-NA #Default value if test and training set identical
+	test.set.overall.pred.values<-NA #Default value if test and training set identical
+	
+	if(!identical(x,x.test)){
+	     test.set.results<-numerical.predicted.value.and.error(predicted.test.set.values.by.tree,y.test, wt.test)
+	     }	
+	numerical.results<-list(list("Traing Set Error:", training.set.results[[2]][[2]]),
+  						  list("Predicted Training Set Values:", training.set.results[[1]][[2]]),
+  						  list("Predicted Test Set Values",test.set.results[[1]][2]),
+  						  list("Test Set Error:", test.set.results[[2]][[2]]))
+	return(numerical.results)
+	}
+	
+numerical.predicted.value.and.error<-function(predicted.values.by.tree, y, wt){
+	#Collapses all the trees into one giant sum, correctly handling the NA's
+    SumResults<-Reduce('MatrixAdder',predicted.values.by.tree,right=FALSE)
+    
+    #The elements in the first matrix need to be 1 or NA for the MatrixCounter to run
+    #correctly since it always adds 1 with each sucessive matrix. If the first matrix
+    #has the actual results, the count does not start from one.
+    predicted.values.by.tree[[1]]<-predicted.values.by.tree[[1]]/predicted.values.by.tree[[1]] 
+    TotalCounts<-Reduce('MatrixCounter',predicted.values.by.tree,right = FALSE)
+    overall.pred.values <- SumResults/TotalCounts
+    
+    TotalCounts<-TotalCounts/TotalCounts ## --Now we have 1 if that obs was used, NA otherwise.
+	TotalCounts<-wt*TotalCounts
+    tmp<- wt* (y - overall.pred.values)^2
+	error<-apply(tmp, 2, sum,na.rm=TRUE) / apply(TotalCounts,2,sum,na.rm=TRUE)
+
+	results<- list(list("predicted values", overall.pred.values),
+				  list("error",error))
+	return(results)
+	
+	}
+
+
+Mapper<- function(x, key){
+	mapped.predicted.values<- matrix(NA, nrow = length(x),ncol =1)
+	for(i in 1:length(x)){
+			#current.value<- as.numeric(levels(x[i]))[as.integer(x[i])]
+			current.value<-x[i,]
+			mapped.predicted.values[i,]<- key[current.value + 1]
+	}
+	mapped.predicted.values
+}
+
+ConvertFactorsToNumeric<- function (input){
+	factor.as.numeric<-as.numeric(input)
+	factor.as.numeric.adjusted<-factor.as.numeric - 1
+	factor.adjusted<- as.factor(factor.as.numeric.adjusted)
+	factor.adjusted
+	}
+
+create.confusion.matrix<- function(answers, predicted.values){
+	
+	factor.answers <- answers
+	factor.predicted <- factor(predicted.values, levels = levels(factor.answers))
+	confusion.matrix<-table(factor.answers, factor.predicted, useNA = "ifany")
+	
+	class.error<- diag(1- prop.table(confusion.matrix,1))
+	confusion.matrix<-cbind(confusion.matrix,class.error)
+	
+	confusion.matrix
+
+}
+
+
+is.wholenumber <-
+    function(x, tol = .Machine$double.eps^0.5)  abs(x - round(x)) < tol
+
+MatrixMode <- function(x){
+	cell.mode<-as.numeric(names(which.max(table(x))))
+	if(length(cell.mode)==0){
+		cell.mode <- NA
+		}
+	cell.mode
+}	
+
+MatrixAdder<-function(u,v){
+	na.u<-is.na(u)
+	na.v<-is.na(v)	
+	ifelse(na.u & na.v, NA, ifelse(na.u, 0, u)+ ifelse(na.v,0,v))	
+}
+
+MatrixCounter<-function(u,v){
+	na.u<-is.na(u)
+	na.v<-is.na(v)
+	ifelse(na.u & na.v, NA, ifelse(na.u, 0, u)+ ifelse(na.v,0,1))
+	}
+
+parameter.list<-function(leafy, percentage.of.variables, total.variables){
+
+	#new.var.count<- round(percentage.of.variables*total.variables)
+	new.var.count<-round(sqrt(total.variables))
+	new.variables<-sample(1:total.variables,new.var.count,replace=FALSE)
+	return(new.variables)
+}
+
+add.bas.fx <- function(BFs, new.add, m) {
   ## add a bas fx to the current basis function configuration
   first.BF <- BFs[[m]]
   var.num <- new.add[[5]]
@@ -12,15 +159,23 @@
 }
 
 assess.risk.on.add <- function(poss.add, BF.list, dat, y, wt, opts,x.temp,is.num,missing) {
-  gc()
+  gc() ## why do we call the garbage collector only here?
   
-  ## from 'add.bas.fx' find best addition for each bas.fx
-  ## now see which of M additions minimizes the RSS
+  # from 'add.bas.fx' find best addition for each bas.fx
+  # now see which of M additions minimizes the RSS
   add.risk <- NULL
   new.bf <- vector("list", length=length(poss.add))
 
+	#print('poss.add is')
+	#print(poss.add)
+	#print('the length of poss.add is')
+	#print(length(poss.add))
   for (M in 1:length(poss.add)) {
     ## check if we can do the split
+    #print('M is')
+    #print(M)
+    #print('poss.add[[M]] is')
+    #print(poss.add[[M]])
     if (!poss.add[[M]][[4]]) {
       new.bf[[M]] <- add.bas.fx(BFs=BF.list, new.add=poss.add[[M]], m=M)
       ###update x.temp based on this proposed addition move
@@ -59,12 +214,20 @@ assign.obs.to.bf <- function(dat2, n, p, BFs) {
   ## n = num of obs
   ## dat2 = matrix with variables and corresponding values (nxp)
  
+  ##"or" starts out as a vector of 0's (one for each obs). It keeps count for each observation.
+  ##Based on the count, the full basis function for all observations is specified since the
+  ##basis function is comprised of a list of ranges.
+  ##If an observation, x_i is within the correct range (see ineqality below),add is incremented.
+  ##If all p of the variables satisify the inequality, the final location (or bucket) of
+  ##x_i is determined since for that observation all p-variables comply with the range. Thus x_i
+  ##falls within the p-dimensional hypercube. Thus we increment "or" only when (add == p).
+  
   fun <- function(BF) {
-    or <- integer(n)
+    or <- integer(n) #creates a vector of 0's of length n
     for(K in 1:length(BF[[1]])) {
       add <- integer(n)
       for(P in 1:p) {
-        x <- as.numeric(dat2[,P])
+        x <- as.numeric(dat2[,P])  ##Isn't dat2 already all numeric?
         add <- add + (BF[[P]][[K]][1] < x & x <= BF[[P]][[K]][2])
       }
       or <- or + (add == p) 

@@ -5,26 +5,34 @@
 ###                                                                #
 ####################################################################
 
-subst <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts,x.temp,is.num) {
-  ## first call add - to find best split for each basis function
-  
+subst <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts,x.temp,is.num,control) {
+  # first call add - to find best split for each basis function
+  #addon is its own file
 
   
   try.add <- addon(bas.fx=bas.fx, y=y, wt=wt, dat=dat,
-                   minbuck=minbuck, real.LIST=real.LIST, opts=opts, x.temp=x.temp,is.num=is.num)
+                   minbuck=minbuck, real.LIST=real.LIST, opts=opts, x.temp=x.temp,is.num=is.num,control)
 
-  ## situation 1 - some variables cannot be split
+  # situation 1 - some variables cannot be split
   use.var <- NULL
+    #This loops gets a count of the number of partitions (or basis functions) that were
+    #unable to be split. This is then used to compute cant.split.
+    #print('The basis.fx is')
+    #print(bas.fx)
+    #print('try.add is')
+    #print(try.add)
   for(M in 1:ncol(bas.fx))
     use.var <- c(use.var, try.add[[M]][[4]])
   cant.split <- sum(use.var) >= (ncol(bas.fx) - 1)
 
   # if there are at least 2 variables to try to do a substution with
   if(!cant.split) {
-    ## only grab basis functions which we can use
+    # only grab basis functions which we can use
     bfs.to.split <- c(c(1:length(use.var))[!use.var])
     try.subs <- best.sub <- list()
     best.sub$sub.risk <- Inf
+
+    ##What exactly is good.to.split here??!?
     for(good.to.split in bfs.to.split) {  # come back with best of each one
       other.bfs <- sum(bfs.to.split > good.to.split)
       if(other.bfs > 0) {

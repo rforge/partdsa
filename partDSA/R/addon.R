@@ -5,49 +5,81 @@
 ###  function into two additional functions                        #
 ####################################################################
 
-
-addon <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts,x.temp,is.num) {
+addon <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts,x.temp,is.num,control) {
+  
   m <- ncol(bas.fx)  # number of basis functions
   keep.add <- list()
-  for(M in 1:m) {
-    best.of.P <- list()
-    keep.var.P <- NULL
+  
+  for(M in 1:m) { # for each basis function
+    best.of.P <- list() # keeps a list of which variable to split upon
+    keep.var.P <- NULL #
 
-    k <- length(real.LIST[[M]][[1]])
-    for(P in 1:ncol(dat)) {
+    k <- length(real.LIST[[M]][[1]]) #gets the number of splits
+
+   #gets the new variable list.
+   if(control$leafy==1){
+	new.variable.list<-sample(1:ncol(dat),control$leafy.random.num.variables.per.split,replace = FALSE)
+	}
+	else{
+		new.variable.list<-seq(1:ncol(dat))
+		}
+
+    for(P in 1:ncol(dat)) { #for each variable
       all.add <- vector("list", length=k)
       keep.var <- NULL
-      for(K in 1:k) {
-         
-        
-        split.ors <- assign.obs.own.OR.stmt(dat2=x.temp, n=nrow(dat), 
-        p=ncol(dat),ORs=real.LIST[[M]], psi=bas.fx[,M],which.K=K)
-        
-        get.split <- split.fx(psi=split.ors[[1]], y=y, wt=wt, opts=opts,
-                     x.split=dat[,P], n.cut=minbuck,
-                     real.num=real.LIST[[M]][[P]][[K]],is.num=is.num[P])
-  
-        all.add[[K]] <- list(cut.value = get.split$val,new.lt = get.split$new.lt,
+      
+      for(K in 1:k) {# for each split
+	  #Outer loop is for every basis function, Middle loop is for every
+	  #variable for each basis function, Inner loop is for each split for each
+	  #such variable.
+        if(P %in% new.variable.list){    
+
+                #This function is similar to assign.obs.to.bf in newfunctions.R
+     	        split.ors <- assign.obs.own.OR.stmt(dat2=x.temp, n=nrow(dat), 
+        		p=ncol(dat),ORs=real.LIST[[M]], psi=bas.fx[,M],which.K=K)
+       
+        		
+        	    get.split <- split.fx(psi=split.ors[[1]], y=y, wt=wt, opts=opts,
+                x.split=dat[,P], n.cut=minbuck, real.num=real.LIST[[M]][[P]][[K]],is.num=is.num[P])
+	
+       	        all.add[[K]] <- list(cut.value = get.split$val,new.lt = get.split$new.lt,
                              new.gt = get.split$new.gt, cant.split = get.split$cant.split,
                              Variable.number = P, OR.statement.number = K,
                              Exclude.OR.members = bas.fx[,M] - split.ors[[1]])
-        keep.var[K] <- ifelse(get.split$cant.split, NA, get.split$max.g)
-      }
 
-      ## if can't split don't consider for best of the Mth BF
+
+				#max.g a measure of impurity
+		       	keep.var[K] <- ifelse(get.split$cant.split, NA, get.split$max.g)
+        }
+        else{
+          
+        	keep.var[K] <- NA
+        	}
+        
+        
+   	  }    #closes the split loop
+
+      # if can't split don't consider for best of the Mth BF
       keep.k <- which.max(keep.var)
       if (length(keep.k) == 0)
         keep.k <- 1
 
-      best.of.P[[P]] <- all.add[[keep.k]]
-      keep.var.P[P] <- keep.var[keep.k]
+
+        best.of.P[[P]] <- all.add[[keep.k]] # saves best split info for variable P
+        keep.var.P[P] <- keep.var[keep.k] # saves the impurity for variable
+      
+    } #closes the variable loop
+    
+    keep.k <- which.max(keep.var.P)
+    if (length(keep.k) == 0){
+      keep.k <- 1
+      keep.add[[M]]<-list(0,0,0,TRUE) #If none of the variables can be split upon, this avoids
+      								  #a null value for that partition.
+    }else{
+    #For each basis function, best variable split is saved.
+    keep.add[[M]] <- best.of.P[[keep.k]] 
     }
 
-    keep.k <- which.max(keep.var.P)
-    if (length(keep.k) == 0)
-      keep.k <- 1
-
-    keep.add[[M]] <- best.of.P[[keep.k]]
   }
  
   return(keep.add)
