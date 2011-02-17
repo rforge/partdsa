@@ -1,0 +1,13 @@
+export(partDSA, DSA.control, loglevel, trim, trim.dsa, trim.partDSA,
+       predict.dsa, print.dsa, print.partDSA, dumpDSA,
+       showDSA, showDSA.dsa, showDSA.character)
+S3method(trim, dsa)
+S3method(trim, partDSA)
+S3method(predict, dsa)
+S3method(predict, LeafyDSA)
+S3method(print, dsa)
+S3method(print, partDSA)
+S3method(print, LeafyDSA)
+S3method(print, LeafyPredictions)
+S3method(showDSA, dsa)
+S3method(showDSA, character)

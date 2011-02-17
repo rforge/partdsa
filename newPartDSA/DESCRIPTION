@@ -1,0 +1,16 @@
+Package: partDSA
+Type: Package
+Title: Partitioning using deletion, substitution, and addition moves
+Version: 0.8.0
+Author: Annette Molinaro <annette.molinaro@yale.edu>,
+        Karen Lostritto <karen.lostritto@yale.edu>, 
+        Greg,
+        Steve Weston <stephen.b.weston@gmail.com>
+Maintainer: Annette Molinaro <annette.molinaro@yale.edu>
+Description: partDSA is a novel tool for generating a piecewise
+        constant estimation list of increasingly complex predictors
+        based on an intensive and comprehensive search over the entire
+        covariate space.
+Depends: R (>= 2.5), survival
+Suggests: nws, MASS
+License: GPL-2
