@@ -59,6 +59,18 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
   } else if (ty$options$outcome.class == 'factor') {
      fun <- function(f) mean(as.numeric(f) != as.numeric(y.test))
      cv.risk <- unlist(lapply(pred.test.DSA, fun))
+  } else if (ty$options$outcome.class == 'survival' &&
+             ty$options$loss.fx == "IPCW") {
+     tmp <- wt.test * ((y.test[,1] - pred.test.DSA) ^ 2)
+     cv.risk <- apply(tmp, 2, sum) / sum(wt.test)
+  } else if (ty$options$loss.fx == "Brier") {
+     ## For brier, calculating the risk is more complicated because
+     ## we need to re-determine the coefficients and the wt depending
+     ## on the cutpoint and then use that to calculate the risk.
+     ## this function (in new functions) adds up the risk over all
+     ## the cutpoint values
+     cv.risk <- calculate.risk(model=ty, x, y, wt, x.test, y.test, wt.test,
+                               opts=list(loss.fx="Brier", brier.vec=brier.vec))
   }
 
   c(cv.risk, rep(NA, cut.off.growth - length(cv.risk)))
