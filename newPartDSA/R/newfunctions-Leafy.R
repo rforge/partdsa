@@ -52,11 +52,16 @@ numerical.predictions<- function(predicted.values.by.tree,predicted.test.set.val
 	
 	if(!identical(x,x.test)){
 	     test.set.results<-numerical.predicted.value.and.error(predicted.test.set.values.by.tree,y.test, wt.test)
-	     }	
+	     Predicted.Test.Set.Values<-test.set.results[[1]][[2]]
+	     Test.Set.Error<-test.set.results[[2]][[2]]
+	     }else{
+		 Predicted.Test.Set.Values<-NA
+		 Test.Set.Error<-NA     	
+	}
 	numerical.results<-list(list("Traing Set Error:", training.set.results[[2]][[2]]),
   						  list("Predicted Training Set Values:", training.set.results[[1]][[2]]),
-  						  list("Predicted Test Set Values",test.set.results[[1]][2]),
-  						  list("Test Set Error:", test.set.results[[2]][[2]]))
+  						  list("Predicted Test Set Values",Predicted.Test.Set.Values),
+  						  list("Test Set Error:",Test.Set.Error))
 	return(numerical.results)
 	}
 	

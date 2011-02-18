@@ -1,4 +1,4 @@
-predict.LeafyDSA<-function(object, x, y, wt, ...){
+predict.LeafyDSA<-function(object, x, y, wt=rep(1, nrow(x)), ...){
         results <- object
 	if(is.factor(y)){
 		decision.rules<-results[[9]]
