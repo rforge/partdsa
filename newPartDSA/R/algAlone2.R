@@ -240,7 +240,15 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     f <- factor(unlist(i), levels=paste(seq(length=ncol(test))))
     tapply(y, f, function(d) d, simplify=FALSE)
   }
-  datalist <- lapply(keep.bas.fx, datafun)
+
+  # XXX Currently, this gets an error for survival case
+  datalist <- tryCatch({
+    lapply(keep.bas.fx, datafun)
+  },
+  error=function(e) {
+    print(e)
+    NULL
+  })
 
   object <- list(cut.off.growth=cut.off.growth,
                  minbuck=minbuck,
