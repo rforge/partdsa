@@ -4,7 +4,7 @@ Title: Partitioning using deletion, substitution, and addition moves
 Version: 0.8.0
 Author: Annette Molinaro <annette.molinaro@yale.edu>,
         Karen Lostritto <karen.lostritto@yale.edu>, 
-        Greg,
+        Gregory Ryslik <gregory.ryslik@yale.edu>,
         Steve Weston <stephen.b.weston@gmail.com>
 Maintainer: Annette Molinaro <annette.molinaro@yale.edu>
 Description: partDSA is a novel tool for generating a piecewise
