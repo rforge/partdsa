@@ -153,7 +153,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       tree.results <- eachElem(sleigh,worker.leafy,1:control$leafy.num.trees,
                                list(minbuck, cut.off.growth, MPD, missing,
                                     loss.function, x, y, wt, x.test, y.test,
-                                    control, wt.method, brier.vec))
+                                    wt.test, control, wt.method, brier.vec))
       lapply(tree.results,function(e) if(inherits(e,'error')) stop(e))
     }
 
