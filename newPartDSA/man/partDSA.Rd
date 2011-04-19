@@ -78,7 +78,8 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 \item{leafy.random.num.variables.per.split}{Not documented yet.}
 \item{leafy.num.trees}{Not documented yet.}
 \item{save.input}{Indicates if \code{x} and \code{y} should be saved
- in the object returned by partDSA.}
+ in the object returned by partDSA.  If \code{FALSE}, \code{x} and \code{y}
+ are set to \code{NULL}.  The default value is \code{FALSE}.}
 }
 \details{
 \code{missing} set to "no" indicates that there is no missing data and
