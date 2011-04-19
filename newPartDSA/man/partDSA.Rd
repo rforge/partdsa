@@ -21,7 +21,7 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
             missing="impute.at.split", loss.function="default",
             wt.method="KM", brier.vec=NULL,
             leafy=0, leafy.random.num.variables.per.split=4,
-            leafy.num.trees=50)
+            leafy.num.trees=50, save.input=FALSE)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -77,6 +77,8 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 \item{leafy}{Not documented yet.}
 \item{leafy.random.num.variables.per.split}{Not documented yet.}
 \item{leafy.num.trees}{Not documented yet.}
+\item{save.input}{Indicates if \code{x} and \code{y} should be saved
+ in the object returned by partDSA.}
 }
 \details{
 \code{missing} set to "no" indicates that there is no missing data and

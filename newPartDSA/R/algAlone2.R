@@ -263,7 +263,9 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
                  options=opts,
                  y.levels=y.levels,
                  tablist=tablist,
-                 datalist=datalist)
+                 datalist=datalist,
+                 x=if(control$save.input) x else NULL,
+                 y=if(control$save.input) y else NULL)
   class(object) <- 'dsa'
   object
 }
