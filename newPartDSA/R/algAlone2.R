@@ -243,17 +243,10 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
       if (length(x) != 1) NA_integer_ else x
     })
     f <- factor(unlist(i), levels=paste(seq(length=ncol(test))))
-
-    if (outcome.class == "survival") {
-      ## Convert survival data into a normal numeric vector
-      y <- as.numeric(y)[1:n]
-      tapply(y, f, function(d) d, simplify=FALSE)
-    } else {
-      tapply(y, f, function(d) d, simplify=FALSE)
-    }
+    split(y, f, drop=TRUE)  # This works on survival objects, also
   }
 
-  # This used to give an for survival case, but is hopefully fixed now
+  # This used to give an error for survival case, but is hopefully fixed now
   datalist <- tryCatch({
     lapply(keep.bas.fx, datafun)
   },
@@ -529,9 +522,8 @@ genImageData <- function(outcome.class, data, file, pname, numobs) {
   tfile <- tempfile('dsa')
   png(tfile, width=200, height=200)
   main <- sprintf("Partition %s (n=%d)", pname, numobs)
-  if (outcome.class == "survival") {
-    # XXX temporary work-around
-    plot(1:10, main=main)
+  if (is.Surv(data)) {
+    plot(survfit(data~1), xlab="Survival Time", ylab="Survival Probability")
   } else if (is.factor(data)) {
     tab <- table(data) / length(data)
     barplot(tab, ylim=c(0, 1), main=main, axes=FALSE)
