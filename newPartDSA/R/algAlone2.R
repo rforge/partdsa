@@ -484,7 +484,7 @@ dumpDSA <- function(x, file=stdout()) {
           cat(sprintf(' predictedvalue="%f">\n', adjcoef), file=file)
         }
 
-        genImageData(data[[j]], file, pname, tab[j])
+        genImageData(x$options$outcome.class, data[[j]], file, pname, tab[j])
 
         for (P in seq(along=BF)) {
           range <- BF[[P]][[K]]
@@ -513,11 +513,14 @@ dumpDSA <- function(x, file=stdout()) {
   invisible(NULL)
 }
 
-genImageData <- function(data, file, pname, numobs) {
+genImageData <- function(outcome.class, data, file, pname, numobs) {
   tfile <- tempfile('dsa')
   png(tfile, width=200, height=200)
   main <- sprintf("Partition %s (n=%d)", pname, numobs)
-  if (is.factor(data)) {
+  if (outcome.class == "survival") {
+    # XXX temporary work-around
+    plot(1:10, main=main)
+  } else if (is.factor(data)) {
     tab <- table(data) / length(data)
     barplot(tab, ylim=c(0, 1), main=main, axes=FALSE)
     axis(2, at=seq(0, 1, by=0.25))
