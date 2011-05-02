@@ -489,7 +489,7 @@ dumpDSA <- function(x, file=stdout()) {
           cat(sprintf(' predictedvalue="%f">\n', adjcoef), file=file)
         }
 
-        genImageData(x$options$outcome.class, data[[j]], file, pname, tab[j])
+        genImageData(data[[j]], file, pname, tab[j])
 
         for (P in seq(along=BF)) {
           range <- BF[[P]][[K]]
@@ -518,7 +518,7 @@ dumpDSA <- function(x, file=stdout()) {
   invisible(NULL)
 }
 
-genImageData <- function(outcome.class, data, file, pname, numobs) {
+genImageData <- function(data, file, pname, numobs) {
   tfile <- tempfile('dsa')
   png(tfile, width=200, height=200)
   main <- sprintf("Partition %s (n=%d)", pname, numobs)
