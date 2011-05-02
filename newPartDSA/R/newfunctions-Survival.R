@@ -202,7 +202,9 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
     #calculate weights by finding the "survival" probability corresponding to the given Brier time
     G=NULL
     for (i in 1:length(Time)){
-      G[i]<-KMfit$surv[which(KMfit$time==Time[i])]
+      # FIXME: floating point equality is failing, causing exception
+      #G[i]<-KMfit$surv[which(KMfit$time==Time[i])]
+      G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time[i]))]  # XXX must be better solution
       if(G[i]<.2){G[i]=.2}
     }
   
@@ -236,9 +238,10 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
   G=NULL
  
   for (i in 1:length(Time)){
-  G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
-  
-  if(G[i]<.2){G[i]=.2}
+    # FIXME: floating point equality is failing, causing exception
+    #G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
+    G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time_Brier[i]))]  # XXX must be better solution
+    if(G[i]<.2){G[i]=.2}
   }
   
   #the actual weight is 1/G
