@@ -34,11 +34,14 @@ model.IPCW <- partDSA(x=x, y=y, x.test=x.test, y.test=y.test,
     control=DSA.control(vfold=5, MPD=.01, minbuck=20,
                         loss.function="IPCW",wt.method="KM"))
 print(model.IPCW)
+dumpDSA(model.IPCW, 'surv.xml')
+showDSA(model.IPCW)
 
 model.Brier <- partDSA(x=x, y=y, x.test=x.test, y.test=y.test,
     control=DSA.control(vfold=5, MPD=.01, minbuck=20,
                         loss.function="Brier"))
 print(model.Brier)
+showDSA(model.Brier)
 
 
 #### Example 2 ####
