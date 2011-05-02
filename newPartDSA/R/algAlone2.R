@@ -231,17 +231,29 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   ## Get the vector of outcomes for each of the partitions
   datafun <- function(BFs) {
     test <- assign.obs.to.bf(dat2=x, n=n, p=p, BFs=BFs)
+
     stopifnot(n == nrow(test))
-    stopifnot(n == length(y))
+    if (outcome.class == "survival")
+      stopifnot(n == length(y) %/% 2)
+    else
+      stopifnot(n == length(y))
+
     i <- lapply(seq(length=nrow(test)), function(irow) {
       x <- which(test[irow,] != 0)
       if (length(x) != 1) NA_integer_ else x
     })
     f <- factor(unlist(i), levels=paste(seq(length=ncol(test))))
-    tapply(y, f, function(d) d, simplify=FALSE)
+
+    if (outcome.class == "survival") {
+      ## Convert survival data into a normal numeric vector
+      y <- as.numeric(y)[1:n]
+      tapply(y, f, function(d) d, simplify=FALSE)
+    } else {
+      tapply(y, f, function(d) d, simplify=FALSE)
+    }
   }
 
-  # XXX Currently, this gets an error for survival case
+  # This used to give an for survival case, but is hopefully fixed now
   datalist <- tryCatch({
     lapply(keep.bas.fx, datafun)
   },
