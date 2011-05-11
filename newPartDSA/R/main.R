@@ -50,7 +50,7 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
                 loss.function=loss.function, control=control,
                 wt.method=wt.method, brier.vec=brier.vec)
 
-  x.test <- impute.test(x=x,y=y,x.test=x.test,y.test=y.test,missing=missing)
+  x.test <- impute.test(x=x,y=y,x.test=x.test,missing=missing)
   pred.test.DSA <- predict(ty, x.test)
 
   if (ty$options$outcome.class == 'numeric') {
@@ -312,7 +312,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
                         loss.function=loss.function, control=control,
                         wt.method=wt.method, brier.vec=brier.vec)
 
-    x.test <- impute.test(x=x,y=y,x.test=x.test,y.test=y.test,missing=missing)
+    x.test <- impute.test(x=x,y=y,x.test=x.test,missing=missing)
     pred.test.set.DSA <- predict(test2.ty, x.test)
 
     if (test2.ty$options$outcome.class == 'numeric') {

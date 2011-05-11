@@ -298,8 +298,20 @@ trim.dsa <- function(object, cut.off.growth, ...) {
   object
 }
 
-predict.dsa <- function(object, newdata, ...) {
-  get.bfs.for.test <- lapply(object$IkPn, get.bfs, dat=newdata)
+predict.dsa <- function(object, newdata1, ...) {
+
+
+if(length(class(object))==2){
+
+	if(length(which(is.na(newdata1)))>0 & !is.null(object$x)){
+		newdata=impute.test(object$x,object$y,newdata1,missing="impute.at.split")
+	}else if (length(which(is.na(newdata1)))>0 & is.null(object$x)){
+		stop("There are missing values in the test set, and in order to impute, save.input must be set to TRUE in the partDSA object")
+	}
+}else{
+	newdata=newdata1
+}
+get.bfs.for.test <- lapply(object$IkPn, get.bfs, dat=newdata)
 
   if (object$options$outcome.class == "numeric" ||
       object$options$outcome.class == "survival") {

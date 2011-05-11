@@ -376,7 +376,7 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
 
 
 
-impute.test <- function(x,y,x.test,y.test,missing){
+impute.test <- function(x,y,x.test,missing){
 
  if (missing=="no"){
     return(x.test)
@@ -387,16 +387,16 @@ impute.test <- function(x,y,x.test,y.test,missing){
  
     #for categorical outcome, update based on the outcome class
     # as well as the observation's node
-    if(is.factor(y)){
-      for(i in levels(y)){
-        x.test[(is.na(x.test[,k])&y.test==i),k] <- ifelse(is.factor(x[,k]),
-        names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=T))
-        }
+  #  if(is.factor(y)){
+  #   for(i in levels(y)){
+  #      x.test[(is.na(x.test[,k])&y.test==i),k] <- ifelse(is.factor(x[,k]),
+  #      names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=T))
+  #      }
     
-    }else {   
+   # }else {   
       x.test[(is.na(x.test[,k])),k] <- ifelse(is.factor(x[,k]),
       names(which.max(table(x[,k]))),mean(x[,k],na.rm=T))
-    }
+   # }
   }
 
  return(x.test)

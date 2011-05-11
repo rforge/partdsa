@@ -59,10 +59,10 @@ worker.leafy <- function(tree.num, minbuck, cut.off.growth, MPD, missing,
 
 	
   if(!identical(x.in,x.test.in)){
-  	x.test <- impute.test(x=x.in,y=y.in,x.test=x.test.in,y.test=y.test.in,missing=missing) 
+  	x.test <- impute.test(x=x.in,y=y.in,x.test=x.test.in,missing=missing) 
   }
   x.oob<-impute.test(x=x.in[list.of.training.set.elements,], y=y.in[list.of.training.set.elements], 
-  					x.test = x.oob, y.test = y.oob, missing = missing)
+  					x.test = x.oob, missing = missing)
   
   
   pred.oob.DSA <- predict(ty, x.oob)  
