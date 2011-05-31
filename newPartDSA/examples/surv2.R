@@ -6,4 +6,4 @@ ydat <- Surv(kdat$surv, kdat$cens)
 md.surv <- partDSA(x=xdat, y=ydat,
                    control=DSA.control(vfold=5, MPD=.2, missing='impute.at.split'))
 dumpDSA(md.surv, 'surv2.xml')
-# showDSA(md.surv)
+showDSA(md.surv)
