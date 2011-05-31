@@ -238,12 +238,12 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     else
       stopifnot(n == length(y))
 
-    i <- lapply(seq(length=nrow(test)), function(irow) {
+    i <- sapply(seq(length=nrow(test)), function(irow) {
       x <- which(test[irow,] != 0)
       if (length(x) != 1) NA_integer_ else x
     })
-    f <- factor(unlist(i), levels=paste(seq(length=ncol(test))))
-    split(y, f, drop=TRUE)  # This works on survival objects, also
+    f <- factor(i, levels=paste(seq(length=ncol(test))))
+    split(y, f, drop=FALSE)  # This works on survival objects, also
   }
 
   # This used to give an error for survival case, but is hopefully fixed now
@@ -534,7 +534,9 @@ genImageData <- function(data, file, pname, numobs) {
   tfile <- tempfile('dsa')
   png(tfile, width=200, height=200)
   main <- sprintf("Partition %s (n=%d)", pname, numobs)
-  if (is.Surv(data)) {
+  if (length(data) == 0) {
+    plot(1, 1, main='Length of data is zero')
+  } else if (is.Surv(data)) {
     plot(survfit(data~1), xlab="Survival Time", ylab="Survival Probability")
   } else if (is.factor(data)) {
     tab <- table(data) / length(data)
