@@ -18,8 +18,10 @@ the user an additional tool for their statistical toolbox.
 partDSA(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         control=DSA.control(), sleigh)
 DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
-            missing="default", loss.function="default",
-            wt.method = "KM", brier.vec = NULL)
+            missing="impute.at.split", loss.function="default",
+            wt.method="KM", brier.vec=NULL,
+            leafy=0, leafy.random.num.variables.per.split=4,
+            leafy.num.trees=50, save.input=FALSE)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -66,18 +68,22 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
  This saves time in the model building process.
  The default value is 0.1.}
 \item{missing}{Character string specifying how missing data should be
- handled.  See the details section from more information.}
+ handled.  The default value is "no." See the details section from more information.}
 \item{loss.function}{The function to be minimized when building the model.
  For categorical outcomes, "entropy" (default) or "gini" can be specified.
  For continuous outcomes, the L2 loss function is used.}
 \item{wt.method}{Not documented yet.}
 \item{brier.vec}{Not documented yet.}
+\item{leafy}{Not documented yet.}
+\item{leafy.random.num.variables.per.split}{Not documented yet.}
+\item{leafy.num.trees}{Not documented yet.}
+\item{save.input}{Indicates if \code{x} and \code{y} should be saved
+ in the object returned by partDSA.  If \code{FALSE}, \code{x} and \code{y}
+ are set to \code{NULL}.  The default value is \code{FALSE}.}
 }
 \details{
 \code{missing} set to "no" indicates that there is no missing data and
-will create an error if missing data is found in the dataset.  In the
-case of no missing data, the partDSA function will run more quickly by
-setting missing="no".  Setting missing="default" will use a data
+will create an error if missing data is found in the dataset. Setting missing="impute.at.split" will use a data
 imputation method similar to that in CRUISE (Kim and Loh, 2001). At each
 split, the non-missing observations for a given variable will be used
 to find the best split, and the missing observations will be imputed
@@ -103,7 +109,8 @@ y <- Boston[train.index, 14]
 x.test <- Boston[test.index, -14]
 y.test <- Boston[test.index, 14]
 
-partDSA(x, y, x.test=x.test, y.test=y.test)
+control <- DSA.control(vfold=1)  # no cross-validation
+partDSA(x, y, x.test=x.test, y.test=y.test, control=control)
 }
 
 \keyword{utilities}

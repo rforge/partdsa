@@ -20,8 +20,10 @@ x.test <- vars[test.index,]
 y.test <- outcome[test.index]
 wt.test <- rep(1, ts.n)
 
-control <- DSA.control(vfold=1)  # disable cross-validation
+# Enable leafy and disable cross-validation
+control <- DSA.control(vfold=1, cut.off.growth=15, leafy=1, leafy.num.trees=4,
+                       leafy.random.num.variables.per.split=4)
 results <- partDSA(x, y, wt, x.test, y.test, wt.test, control=control)
 print(results)
-dumpDSA(results, "boston.xml")
-showDSA(results)
+predictions <- predict(results, x.test, y.test, wt.test)
+print(predictions)

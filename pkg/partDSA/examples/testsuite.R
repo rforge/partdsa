@@ -1,7 +1,4 @@
-# This seems like a good start on a test suite
-# for the partDSA package.  Results aren't checked,
-# but at least it's pretty easy to verify that an
-# error isn't issued.
+# Test suite for the partDSA package.  
 
 library(partDSA)
 
@@ -33,7 +30,7 @@ x <- matrix(rnorm(500),50,10)
 y <- x[,1]^2+x[,2]^2+x[,3]^2+rnorm(50,0,.25)
 x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))
 
 x <- data.frame(matrix(rnorm(500),50,10))
 x[,2] <- as.numeric(x[,2]>0)
@@ -45,7 +42,7 @@ x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
 x[sample(1:50,10),5] <- NA
 x[sample(1:50,10),7] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))
 
 x <- data.frame(matrix(rnorm(500),50,10) )
 x[,2] <- as.numeric(x[,2]>0)
@@ -57,7 +54,7 @@ x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
 x[sample(1:50,10),5] <- NA
 x[sample(1:50,10),7] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))
 
 x <- data.frame(matrix(rnorm(500),50,10) )
 x[,2] <- as.numeric(x[,2]>0)
@@ -70,7 +67,7 @@ x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
 x[sample(1:50,10),5] <- NA
 x[sample(1:50,10),7] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))
 
 x <- data.frame(matrix(rnorm(500),50,10) )
 x[,2] <- as.numeric(x[,2]>0)
@@ -83,7 +80,7 @@ x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
 x[sample(1:50,10),5] <- NA
 x[sample(1:50,10),7] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))
 
 x <- data.frame(matrix(rnorm(500),50,10) )
 x[,2] <- as.numeric(x[,2]>0)
@@ -99,4 +96,4 @@ x[sample(1:50,10),1] <- NA
 x[sample(1:50,10),3] <- NA
 x[sample(1:50,10),5] <- NA
 x[sample(1:50,10),7] <- NA
-partDSA(data.frame(x), y, control=DSA.control(missing="default"))
+partDSA(data.frame(x), y, control=DSA.control(missing="impute.at.split"))

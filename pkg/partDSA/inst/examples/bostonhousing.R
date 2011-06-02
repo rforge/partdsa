@@ -23,5 +23,6 @@ wt.test <- rep(1, ts.n)
 control <- DSA.control(vfold=1)  # disable cross-validation
 results <- partDSA(x, y, wt, x.test, y.test, wt.test, control=control)
 print(results)
-dumpDSA(results, "boston.xml")
+
+# View the "model" object using the Java visualization program
 showDSA(results)

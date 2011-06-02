@@ -3,21 +3,14 @@
 ### Subst is a function which takes all available basis functions  #
 ###  and looks permutations of all  two possible functions         #
 ###                                                                #
-### Subst takes the following parameters:                          #
-###  the nxk matrix of basis functions                             #
-### Subst returns the following:                                   #
-###  the k choose 2 matrices of possible deletition                #
-###                                                                #
-### Subst calls cartsplit(psi,x,y,wt,n.cut)                        #
 ####################################################################
 
-subst <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts,x.temp,is.num) {
+subst <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts, x.temp,
+                  is.num, control) {
   ## first call add - to find best split for each basis function
-  
-
-  
   try.add <- addon(bas.fx=bas.fx, y=y, wt=wt, dat=dat,
-                   minbuck=minbuck, real.LIST=real.LIST, opts=opts, x.temp=x.temp,is.num=is.num)
+                   minbuck=minbuck, real.LIST=real.LIST, opts=opts,
+                   x.temp=x.temp, is.num=is.num, control=control)
 
   ## situation 1 - some variables cannot be split
   use.var <- NULL

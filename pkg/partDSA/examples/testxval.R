@@ -1,10 +1,4 @@
-# customize this as needed
-dsa.loc <- c('/home1/amm226/Rpackages/')
-dsa.loc <- dsa.loc[file.exists(dsa.loc)]
-if (length(dsa.loc) == 0)
-  dsa.loc <- NULL
-
-library(partDSA, lib.loc=dsa.loc)
+library(partDSA)
 library(mlbench)
 source('FriedmanData.R')
 

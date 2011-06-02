@@ -1,7 +1,3 @@
-########################################################################
-##### Survival Functions ###
-
-
 ## This is the top level of the survival function which is called. The first if clause is for Brier and it repeats the lower level survival function the number of times 
 ##corresponding to the length of the brier.vec. It then sums the risk over these times. The second if clause is for IPCW and just runs the lower risk function once.
 survival.overall.risk <- function(bas.fx,y,wt,opts){
@@ -36,6 +32,12 @@ survival.overall.risk <- function(bas.fx,y,wt,opts){
       
 
 	return(get.risk)
+
+
+
+
+
+
 }
 
 
@@ -75,8 +77,11 @@ survival.risk<-function(bas.fx,y,wt,opts){
         
         
       return(get.loss)
+     
    }
  }
+
+
 
  ##### get.at.surv.times #### from AM
  "get.at.surv.times"<-
@@ -136,7 +141,7 @@ function(surv.cens, coeff.cox, w, delta, ttilde,deltaMod=delta)
 }
 
 
-################## Assign Survival Weights #############################
+################## Assign Survival Weights ###################################################################
 
 ## Note x is only passed in if we are doing IPCW using the cox method to calculate the weights.
 assign.surv.wts <- function (x,y,opts,T.star=T.star){
@@ -197,7 +202,9 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
     #calculate weights by finding the "survival" probability corresponding to the given Brier time
     G=NULL
     for (i in 1:length(Time)){
-      G[i]<-KMfit$surv[which(KMfit$time==Time[i])]
+      # FIXME: floating point equality is failing, causing exception
+      #G[i]<-KMfit$surv[which(KMfit$time==Time[i])]
+      G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time[i]))]  # XXX must be better solution
       if(G[i]<.2){G[i]=.2}
     }
   
@@ -231,9 +238,10 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
   G=NULL
  
   for (i in 1:length(Time)){
-  G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
-  
-  if(G[i]<.2){G[i]=.2}
+    # FIXME: floating point equality is failing, causing exception
+    #G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
+    G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time_Brier[i]))]  # XXX must be better solution
+    if(G[i]<.2){G[i]=.2}
   }
   
   #the actual weight is 1/G
@@ -245,6 +253,8 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
 
  
   return (KM.wt1)  
+
+
 }
 
 }
@@ -281,4 +291,5 @@ calculate.risk <- function(model, x, y, wt, x.test, y.test, wt.test, opts){
      }
      
      return (test.set.risk.DSA)
+     
 }

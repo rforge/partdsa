@@ -1,6 +1,5 @@
- add.bas.fx <- function(BFs, new.add, m) {
+add.bas.fx <- function(BFs, new.add, m) {
   ## add a bas fx to the current basis function configuration
-
   first.BF <- BFs[[m]]
   var.num <- new.add[[5]]
   k.num <- new.add[[6]]
@@ -9,7 +8,6 @@
   second.BF[[var.num]][[1]][1] <- new.add[[1]]
   BFs[[m]] <- first.BF
   BFs[[length(BFs) + 1]] <- second.BF
- 
   return(BFs)
 }
 
@@ -26,9 +24,9 @@ assess.risk.on.add <- function(poss.add, BF.list, dat, y, wt, opts,x.temp,is.num
     if (!poss.add[[M]][[4]]) {
       new.bf[[M]] <- add.bas.fx(BFs=BF.list, new.add=poss.add[[M]], m=M)
       ###update x.temp based on this proposed addition move
-      dat2 <- update.missing(x.temp=x.temp,x=dat,y=y,bas=cbind(poss.add[[M]]$new.lt,poss.add[[M]]$new.gt),is.num=is.num, todo="a",missing=missing)
-      bas.fx <- data.frame(assign.obs.to.bf(dat2=dat2, n=nrow(dat),
-                                            p=ncol(dat), BFs=new.bf[[M]]))
+      dat2 <- update.missing(x.temp=x.temp,x=dat,y=y,bas=cbind(poss.add[[M]]$new.lt,poss.add[[M]]$new.gt),is.num=is.num,       todo="a",missing=missing)
+      bas.fx <- assign.obs.to.bf(dat2=dat2, n=nrow(dat), p=ncol(dat),
+                                 BFs=new.bf[[M]])
       add.risk[M] <- risk.fx(bas.fx=bas.fx, y=y, wt=wt, opts=opts)
       
     }
@@ -42,11 +40,11 @@ assess.risk.on.add <- function(poss.add, BF.list, dat, y, wt, opts,x.temp,is.num
   ### added
   if(sum(!is.na(add.risk))>0){
   ###update x.temp to reflect the chosen best addition move
-  dat2 <- update.missing(x.temp=x.temp,x=dat,y=y,bas=cbind(poss.add[[ind.a]]
-  $new.lt,poss.add[[ind.a]]$new.gt),is.num=is.num, todo="a",missing=missing)
-}else{
- dat2=x.temp
-}
+      dat2 <- update.missing(x.temp=x.temp,x=dat,y=y,bas=cbind(poss.add[[ind.a]]
+               $new.lt,poss.add[[ind.a]]$new.gt),is.num=is.num, todo="a",missing=missing)
+  } else{
+        dat2=x.temp
+  }
 
   list(new.bf=new.bf[[ind.a]],
        add.risk=if(is.na(ind.a)) add.risk[1] else add.risk[ind.a],x.temp=dat2)
@@ -60,36 +58,21 @@ assign.obs.to.bf <- function(dat2, n, p, BFs) {
   ## p = num of variables
   ## n = num of obs
   ## dat2 = matrix with variables and corresponding values (nxp)
-
-   
+ 
   fun <- function(BF) {
     or <- integer(n)
     for(K in 1:length(BF[[1]])) {
       add <- integer(n)
       for(P in 1:p) {
-       # if(is.numeric(dat2[,P])){
-       
-          x <- as.numeric(dat2[,P])
-                
-          add <- add + (BF[[P]][[K]][1] < x & x <= BF[[P]][[K]][2])
-        
-      #  }else if(is.factor(dat2[,P])){
-    
-       
-       #   x <- as.numeric(dat2[,P])-1
-      
-        #  add <- add + (BF[[P]][[K]][1] <= x & x <  BF[[P]][[K]][2])
-       # }
+        x <- as.numeric(dat2[,P])
+        add <- add + (BF[[P]][[K]][1] < x & x <= BF[[P]][[K]][2])
       }
       or <- or + (add == p) 
     }
     as.numeric(or)  # XXX for compatibility
   }
-  bf.locat <- do.call('cbind', lapply(BFs, fun))
-
-  assign("bf.locat",bf.locat,envir=globalenv())
-
-  return(list(bf.locat))
+  names(BFs) <- paste('X', seq(along=BFs), sep='')
+  do.call('data.frame', lapply(BFs, fun))
 }
 
 
@@ -97,7 +80,7 @@ risk.fx <- function(bas.fx, y, wt, opts){
   if(opts$outcome.class=="factor"){
     get.risk<-categorical.risk(bas.fx=bas.fx,y=y,wt=wt,opts=opts)
   } else if (opts$outcome.class=="survival"){
-    get.risk <- survival.overall.risk (bas.fx=bas.fx, y=y, wt=wt, opts=opts)
+    get.risk <- survival.overall.risk(bas.fx=bas.fx, y=y, wt=wt, opts=opts)
   } else get.risk<-rss.risk(bas.fx,y,wt)
   return(get.risk)
 }
@@ -106,7 +89,7 @@ risk.fx <- function(bas.fx, y, wt, opts){
 rss.risk <- function(bas.fx, y, wt) {
   n <- length(y)
   get.loss <- NULL
-  lm.xy <- lm(y~., data=bas.fx, weight=wt)
+  lm.xy <- lm(y~., data=bas.fx, weights=wt)
   coef <- ifelse(is.na(lm.xy$coefficients), 0, lm.xy$coefficients)
   new <- as.matrix(cbind(1, bas.fx))
   pred.val <- new %*% coef
@@ -132,33 +115,27 @@ categorical.risk <- function(bas.fx, y, wt, opts) {
 
 gini.impurity <- function(y, opts) {
   p = rle(sort(as.integer(y)))$lengths / length(y)
-  if (opts$loss.fx == "gini")
+  if (opts$loss.fx == "gini")         # gini
     1.0 - sum(p * p)
-  else
+  else                                # entropy
     sum(-p * log(p))
 }
 
 get.bfs <-function(BFs, dat) {
-  
-  data.frame(cbind(rep(1, nrow(dat)),
-                   assign.obs.to.bf(dat2=dat, n=nrow(dat),
-                                    p=ncol(dat), BFs=BFs)[[1]]))
+  cbind(INDEX=rep(1, nrow(dat)),
+        assign.obs.to.bf(dat2=dat, n=nrow(dat), p=ncol(dat), BFs=BFs))
 }
 
 get.coefs <- function(BFs, dat, y, wt) {
-  outs <- data.frame(assign.obs.to.bf(dat2=dat, n=nrow(dat),
-                                      p=ncol(dat), BFs=BFs))
- 
-  names(outs)=paste("X",1:ncol(outs),sep="")
-  lm.xy <- lm(y~., data=outs, weight=wt)
+  outs <- assign.obs.to.bf(dat2=dat, n=nrow(dat), p=ncol(dat), BFs=BFs)
+  lm.xy <- lm(y~., data=outs, weights=wt)
   coef <- ifelse(is.na(lm.xy$coefficients), 0, lm.xy$coefficients)
   r2 <- summary(lm.xy)$r.squared
   return(list(coef=coef, r2=r2))
 }
 
 get.votes <- function(BFs, dat, y, wt) {
-  outs <- data.frame(assign.obs.to.bf(dat2=dat, n=nrow(dat),
-                                      p=ncol(dat), BFs=BFs))
+  outs <- assign.obs.to.bf(dat2=dat, n=nrow(dat), p=ncol(dat), BFs=BFs)
   part.pred <- numeric(ncol(outs))
   for (j in 1:ncol(outs)) {
     ty <- table(y[outs[,j] == 1])
@@ -191,7 +168,7 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
   if(missing=="no"){
     
     return(x)
-  }else if(missing=="default"){
+  }else if(missing=="impute.at.split"){
   
   ### this is the case when we have two new basis function so dim(bas)[2]=2
   if (todo=="a"){
@@ -288,7 +265,7 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
                 replace1 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
                 as.numeric(names(which.max(table(x[,i])))))
                 warning(paste("All values of variable",names(x.temp)[i],
-               "are NA in node. Using overall average of this variable."))
+                "are NA in node. Using overall average of this variable."))
         #otherwise take average within this node
         }else{
                 replace1 <- ifelse (is.num[i]==1,
@@ -304,7 +281,7 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
 	if (length(which(!is.na(x[bas[,2]==1,i])))==0){
                 replace2 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
                 as.numeric(names(which.max(table(x[,i])))))
-                 warning(paste("All values of variable",names(x.temp)[i],
+                warning(paste("All values of variable",names(x.temp)[i],
                 "are NA in node. Using overall average of this variable."))
         #otherwise take average within this node
         }else{
@@ -343,11 +320,11 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
           	if (length(which(!is.na(x[bas==1,i])))==0){
                 	replace <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
                 	as.numeric(names(which.max(table(x[,i])))))
-                       warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable."))
+                        warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable."))
           	}else if (length(which(!is.na(x[bas==1&y==levels(y)[j],i])))==0){
 			replace <- ifelse(is.num[i]==1,mean(x[bas==1,i],na.rm=T),as.numeric(names(which.max(table(x[bas==1,i])))))
-                warning(paste("All values of variable",names(x.temp)[i],"for level",levels(y)[j], "are NA in each node.
-                        Using overall average in the node."))
+                	warning(paste("All values of variable",names(x.temp)[i],"for level",levels(y)[j], "are NA in each node.
+                         Using overall average in the node."))
           	}else{
                		replace <-  ifelse(is.num[i]==1,
                 	mean(x[bas==1& y==levels(y)[j],i],na.rm=T),
@@ -399,28 +376,28 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
 
 
 
-impute.test <- function(x,y,x.test,y.test,missing){
+impute.test <- function(x,y,x.test,missing){
 
  if (missing=="no"){
     return(x.test)
  }
- else if (missing=="default"){
+ else if (missing=="impute.at.split"){
  ## impute the test matrix based on means and mode from training set
-    for (k in 1:dim(x.test)[2]){
+  for (k in 1:dim(x.test)[2]){
  
     #for categorical outcome, update based on the outcome class
     # as well as the observation's node
-       if(is.factor(y)){
-           for(i in levels(y)){
-              x.test[(is.na(x.test[,k])&y.test==i),k] <- ifelse(is.factor(x[,k]),
-              names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=T))
-           }
+  #  if(is.factor(y)){
+  #   for(i in levels(y)){
+  #      x.test[(is.na(x.test[,k])&y.test==i),k] <- ifelse(is.factor(x[,k]),
+  #      names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=T))
+  #      }
     
-       }else {   
-          x.test[(is.na(x.test[,k])),k] <- ifelse(is.factor(x[,k]),
-          names(which.max(table(x[,k]))),mean(x[,k],na.rm=T))
-       }
-    }
+   # }else {   
+      x.test[(is.na(x.test[,k])),k] <- ifelse(is.factor(x[,k]),
+      names(which.max(table(x[,k]))),mean(x[,k],na.rm=T))
+   # }
+  }
 
  return(x.test)
  }

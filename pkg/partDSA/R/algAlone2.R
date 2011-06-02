@@ -1,16 +1,16 @@
 rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
-                    MPD=0.1, missing="no", loss.function="default",wt.method="Cox", brier.vec=NULL) {
-                    
+                    MPD=0.1, missing="no", loss.function="default",
+                    control=DSA.control(), wt.method="Cox", brier.vec=NULL) {
   p <- ncol(x)
   n <- nrow(x)
 
   if (is.data.frame(x)) {
-    # get the levels of each factor in the input data frame
+    ## get the levels of each factor in the input data frame
     var.levels <- lapply(x, function(i) if (is.factor(i)) levels(i) else NULL)
-    #is.num remembers the original class for each predictor variable 
+    #is.num remembers the original class for each predictor variable
     is.num <- unlist(lapply(x,function(i) if (is.factor(i)) 0 else 1))
 
-    # convert any columns that are factors into numeric vectors
+    ## convert any columns that are factors into numeric vectors
     if (any(unlist(lapply(var.levels, function(i) !is.null(i))))) {
       if (FALSE)
         warning('converting some columns from factors to double vectors')
@@ -25,10 +25,10 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   var.names <- colnames(x)
   if (is.null(var.names))
     var.names <- sprintf('X%d', seq(length=ncol(x)))
-   
-  #create an imputed x.temp matrix for an initial vector of all 1's
-    x.temp <- update.missing(x,x,y,rep(1,dim(x)[1]), is.num=is.num,todo="d", 
-   missing=missing)
+
+  ## create an imputed x.temp matrix for an initial vector of all 1's
+  x.temp <- update.missing(x,x,y,rep(1,dim(x)[1]), is.num=is.num,todo="d",
+                           missing=missing)
 
   ## Start new - with only one basis function - inclusive of all obs
   ## store corresponding basis functions
@@ -42,8 +42,6 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
 
   ## f.Io is the best RSS yet
   ## keep.rss.risks is the best
-
- 
   bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
 
   if (is.factor(y)) {
@@ -70,15 +68,14 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
                       default="L2",
                       stop("Incorrect loss function for continuous outcome"))
   }
-  
-  opts <- list(loss.fx = loss.fx, outcome.class=outcome.class)
-  # in the case of survival, add in these extra two options depending on loss function
-  if(opts$loss.fx=="IPCW"){opts$wt.method=wt.method}
-  if(opts$loss.fx=="Brier"){opts$brier.vec=brier.vec}
-  
 
-  
-  
+  opts <- list(loss.fx = loss.fx, outcome.class=outcome.class)
+  # In the case of survival, add in these extra two options depending
+  # on loss function
+  if (opts$loss.fx == "IPCW")
+    opts$wt.method <- wt.method
+  if (opts$loss.fx == "Brier")
+    opts$brier.vec <- brier.vec
   f.Io <- risk.fx(bas.fx=bas.fx, y=y, wt=wt,opts=opts)
 
   keep.rss.risks[[1]] <- f.Io
@@ -90,11 +87,11 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     dbug('starting deletion')
     bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
     try.del <- check.del(bas.fx=bas.fx, y=y, wt=wt, real.LIST=dynBF, opts=opts)
-    
+
     ## is it better than the best of the same size?
     ## if yes - replace best and go back to delete
     ## if not go to substitute
-### added check for is.na
+    ## added check for is.na
     if(!is.null(try.del$del.risk) &&
        ((round(keep.rss.risks[[length(try.del$new.bf)]], 5) - round(try.del$del.risk,5)) >=
         MPD * round(keep.rss.risks[[length(try.del$new.bf)]], 5))) {
@@ -104,9 +101,10 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
 
       ## update what we have  - and go back to delete
       dynBF <- try.del$new.bf
-      ### revises x.temp to reflect last "good" deletion move
-      x.temp <- update.missing(x.temp=x.temp,x=x,y=y,bas=try.del[[3]],is.num=is.num, todo="d",missing=missing)
-      
+      ## revises x.temp to reflect last "good" deletion move
+      x.temp <- update.missing(x.temp=x.temp,x=x,y=y,bas=try.del[[3]],
+                               is.num=is.num, todo="d",missing=missing)
+
       track.moves[[track.moves.ind]] <- list()
       track.moves[[track.moves.ind]][[1]] <- "Delete"
       track.moves[[track.moves.ind]][[2]] <- list(try.del$new.bf)
@@ -115,22 +113,22 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     } else {
       ## Finished deletion - going into Substitution
       dbug('starting substitution')
-      
-      #create new basis functions using x.temp from last good delete move
+
+      ## create new basis functions using x.temp from last good delete move
       bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
-     
+
       try.sub.g <- subst(bas.fx=bas.fx, y=y, wt=wt, dat=x, minbuck=minbuck,
-                         real.LIST=dynBF, opts=opts, x.temp=x.temp,is.num=is.num)
-      
+                         real.LIST=dynBF, opts=opts, x.temp=x.temp,
+                         is.num=is.num, control=control)
+
       best.sub <- try.sub.g$best.of.subs
       sub.risk <- try.sub.g$sub.risk
       try.add <- try.sub.g$try.add
       bf1 <- try.sub.g$best.sub$bf.1.binary
       bf2 <- try.sub.g$best.sub$bf.2.binary
-      
-      
+
       rm(try.sub.g)
-      
+
       if(!is.null(sub.risk) &&
          ((round(keep.rss.risks[[length(best.sub)]], 5) - round(sub.risk,5)) >=
           MPD * round(keep.rss.risks[[length(best.sub)]], 5))) {
@@ -140,10 +138,10 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
 
         ## update what we have - and go back to delete
         dynBF <- best.sub
-        ### update x.temp with this good substitution move
+        ## update x.temp with this good substitution move
         x.temp <- update.missing(x.temp=x.temp,x=x,y=y, bas=cbind(bf1,bf2),
         is.num=is.num, todo="a",missing)
-        
+
         track.moves[[track.moves.ind]] <- list()
         track.moves[[track.moves.ind]][[1]] <- "Substitution"
         track.moves[[track.moves.ind]][[2]] <- list(best.sub)
@@ -152,10 +150,11 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
       } else {
         ## Finished Substitution - going into Addition
         dbug('starting addition')
-        
-       
+
         new.add.bf <- assess.risk.on.add(poss.add=try.add, BF.list=dynBF,
-                                         dat=x, y=y, wt=wt, opts=opts,x.temp=x.temp,is.num=is.num,missing=missing)
+                                         dat=x, y=y, wt=wt, opts=opts,
+                                         x.temp=x.temp, is.num=is.num,
+                                         missing=missing)
 
         ## if it's better than what we have replace what we have
         if(!is.na(new.add.bf$add.risk)) {
@@ -170,12 +169,10 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
                MPD * round(keep.rss.risks[[length(new.add.bf$new.bf)]], 5)) {
               keep.rss.risks[[length(new.add.bf$new.bf)]] <- round(new.add.bf$add.risk, 5)
               keep.bas.fx[[length(new.add.bf$new.bf)]] <- new.add.bf$new.bf
-              ##update x.temp to reflect good addition move
+              ## update x.temp to reflect good addition move
               x.temp <- new.add.bf$x.temp
             }
-
           }
-           
 
           ## update what we have  - no matter if it's better or not
           dynBF <- new.add.bf$new.bf
@@ -197,31 +194,66 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     } # end substitution
   } # end repeat
 
-  
-
   if (opts$outcome.class=="numeric") {
      fun <- function(i) get.coefs(i, dat=x.temp, y=y, wt=wt)$coef
      get.coef.from.training <- lapply(keep.bas.fx, fun)
   } else if (opts$outcome.class=="factor") {
      fun <- function(i) get.votes(i, dat=x.temp, y=y, wt=wt)$vote
      get.coef.from.training <- lapply(keep.bas.fx, fun)
-  }  else if (opts$outcome.class=="survival"){
-     if(opts$loss.fx=="IPCW"){
-           fun <- function(i) get.coefs(i, dat=x.temp, y=y[,1], wt=wt)$coef
-           get.coef.from.training <- lapply(keep.bas.fx, fun)
-     ###note that for the case below we'll be recalculating all the coefficients for each value in brier.vec  and so these coefficents
-     # will not be used. however they do determine the outputted predicted values for the test set. and we may need to change this since
-     # we're just using the first column of wts. y is still on the original scale which may be good.
-     }else if(opts$loss.fx=="Brier" ){
-           fun <- function(i) get.coefs(i, dat=x.temp, y=as.numeric(y[,1]>brier.vec[1]), wt=wt[,1])$coef
-           get.coef.from.training <- lapply(keep.bas.fx, fun) 
-           
-     }
+  }  else if (opts$outcome.class == "survival") {
+    if (opts$loss.fx=="IPCW") {
+       fun <- function(i) get.coefs(i, dat=x.temp, y=y[,1], wt=wt)$coef
+       get.coef.from.training <- lapply(keep.bas.fx, fun)
+       ## note that for the case below we'll be recalculating all the
+       ## coefficients for each value in brier.vec  and so these
+       ## coefficents will not be used. however they do determine the
+       ## outputted predicted values for the test set. and we may need
+       ## to change this since we're just using the first column of
+       ## wts. y is still on the original scale which may be good.
+    } else if(opts$loss.fx == "Brier") {
+      fun <- function(i) get.coefs(i, dat=x.temp, y=as.numeric(y[,1]>brier.vec[1]), wt=wt[,1])$coef
+      get.coef.from.training <- lapply(keep.bas.fx, fun) 
+    }
   }
-     
 
   var.importance <- computeVariableImportance(keep.bas.fx, var.names)
   y.levels <- if (is.factor(y)) levels(y) else NULL
+
+  ## Save information about the number of observations per partition
+  ## which is needed by dumpDSA
+  tabfun <- function(BFs) {
+    test <- assign.obs.to.bf(dat2=x, n=n, p=p, BFs=BFs)
+    i <- unlist(lapply(seq(length=nrow(test)), function(irow) which(test[irow,] != 0)))
+    tabulate(i, nbins=ncol(test))
+  }
+  tablist <- lapply(keep.bas.fx, tabfun)
+
+  ## Get the vector of outcomes for each of the partitions
+  datafun <- function(BFs) {
+    test <- assign.obs.to.bf(dat2=x, n=n, p=p, BFs=BFs)
+
+    stopifnot(n == nrow(test))
+    if (outcome.class == "survival")
+      stopifnot(n == length(y) %/% 2)
+    else
+      stopifnot(n == length(y))
+
+    i <- sapply(seq(length=nrow(test)), function(irow) {
+      x <- which(test[irow,] != 0)
+      if (length(x) != 1) NA_integer_ else x
+    })
+    f <- factor(i, levels=paste(seq(length=ncol(test))))
+    split(y, f, drop=FALSE)  # This works on survival objects, also
+  }
+
+  # This used to give an error for survival case, but is hopefully fixed now
+  datalist <- tryCatch({
+    lapply(keep.bas.fx, datafun)
+  },
+  error=function(e) {
+    print(e)
+    NULL
+  })
 
   object <- list(cut.off.growth=cut.off.growth,
                  minbuck=minbuck,
@@ -234,9 +266,12 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
                  var.names=var.names,
                  var.importance=var.importance,
                  options=opts,
-                 y.levels=y.levels)
+                 y.levels=y.levels,
+                 tablist=tablist,
+                 datalist=datalist,
+                 x=if(control$save.input) x else NULL,
+                 y=if(control$save.input) y else NULL)
   class(object) <- 'dsa'
-  
   object
 }
 
@@ -263,33 +298,43 @@ trim.dsa <- function(object, cut.off.growth, ...) {
   object
 }
 
-predict.dsa <- function(object, newdata,  ...) {
-     
-  get.bfs.for.test <- lapply(object$IkPn, get.bfs, dat=newdata)
+predict.dsa <- function(object, newdata1, ...) {
 
-  if(object$options$outcome.class=="numeric" | object$options$outcome.class=="survival"){
-     fun <- function(i) {
-     matrix(unlist(get.bfs.for.test[[i]]),
-            ncol=ncol(get.bfs.for.test[[i]]),
-            nrow=nrow(newdata)) %*%
-            unlist(object$coefficients[[i]])
-     }
-     do.call('cbind', lapply(seq(along=object$IkPn), fun))
-  } else if(object$options$outcome.class=="factor"){
-     fun <- function(i) {
-        x <- matrix(unlist(get.bfs.for.test[[i]][,-1]),
-            ncol=(ncol(get.bfs.for.test[[i]])-1),
-            nrow=nrow(newdata)) %*%
-            unlist(object$coefficients[[i]])
-        factor(object$y.levels[round(x)], levels=object$y.levels)
-     }
-     lapply(seq(along=object$IkPn), fun)
-  }	
+
+if(length(class(object))==2){
+
+	if(length(which(is.na(newdata1)))>0 & !is.null(object$x)){
+		newdata=impute.test(object$x,object$y,newdata1,missing="impute.at.split")
+	}else if (length(which(is.na(newdata1)))>0 & is.null(object$x)){
+		stop("There are missing values in the test set, and in order to impute, save.input must be set to TRUE in the partDSA object")
+	}
+}else{
+	newdata=newdata1
 }
+get.bfs.for.test <- lapply(object$IkPn, get.bfs, dat=newdata)
 
-
-
-
+  if (object$options$outcome.class == "numeric" ||
+      object$options$outcome.class == "survival") {
+    fun <- function(i) {
+      matrix(unlist(get.bfs.for.test[[i]]),
+             ncol=ncol(get.bfs.for.test[[i]]),
+             nrow=nrow(newdata)) %*%
+          unlist(object$coefficients[[i]])
+    }
+    do.call('cbind', lapply(seq(along=object$IkPn), fun))
+  } else if (object$options$outcome.class == "factor") {
+    fun <- function(i) {
+      x <- matrix(unlist(get.bfs.for.test[[i]][,-1]),
+                  ncol=(ncol(get.bfs.for.test[[i]])-1),
+                  nrow=nrow(newdata)) %*%
+          unlist(object$coefficients[[i]])
+      factor(object$y.levels[round(x)], levels=object$y.levels)
+    }
+    lapply(seq(along=object$IkPn), fun)
+  } else {
+    stop('illegal outcome class')
+  }
+}
 
 computeVariableImportance <- function(IkPn, var.names) {
   numRefs <- function(BFs) {
@@ -308,7 +353,7 @@ computeVariableImportance <- function(IkPn, var.names) {
   }
   vi <- do.call('cbind', lapply(IkPn, numRefs))
 
-  # sanity check var.names
+  ## sanity check var.names
   rownames(vi) <- if (nrow(vi) != length(var.names)) {
     warning('length of var.names not equal to rows of importance matrix')
     paste('X', seq(length=nrow(vi)), sep='')
@@ -330,15 +375,21 @@ print.dsa <- function(x, ...) {
 }
 
 printCoefficients <- function(x) {
-  cat('Coefficients:\n')
+  cat('Outcome:\n')
   for (i in seq(along=x$coefficients)) {
     coef <- x$coefficients[[i]]
-    if (x$options$outcome.class == "numeric" | x$options$outcome.class == "survival") {
+    if (x$options$outcome.class == "numeric" ||
+        x$options$outcome.class == "survival") {
       n <- length(coef)
       ncoef <- if (n > 1) coef[2:n] + coef[1] else coef
-      print(ncoef)
+      names(ncoef)<-c(rep("",n-1))    # remove names of variables - remainder from regression
+      cat(sprintf('Best of %d partitions:\n',i))
+      for(j in 1:(n-1)) cat(sprintf('   Part.%d ',j))
+      cat('\n')
+      for(j in 1:(n-1)) cat('   ', round(ncoef[j],3))
+      cat('\n')
     } else if (x$options$outcome.class == "factor") {
-      ncoef <- factor(x$y.levels[coef], levels=x$y.levels)
+      ncoef <- factor(x$y.levels[coef], levels=x$y.levels) 
       print(ncoef)
     } else {
       cat(sprintf('[unsupported outcome class: %s]\n',
@@ -393,4 +444,124 @@ printBasisFunctions <- function(x) {
   }
 
   invisible(NULL)
+}
+
+dumpDSA <- function(x, file=stdout()) {
+  if (is.character(file)) {
+    file <- file(file, 'w')
+    on.exit(close(file))
+  }
+
+  cat(sprintf('<?xml version="1.0" encoding="UTF-8"?>\n'), file=file)
+  cat(sprintf('<partdsaobj>\n'), file=file)
+
+  cat(sprintf('  <variables>\n'), file=file)
+  for (i in seq(along=x$var.names)) {
+    var.levels <- x$var.levels[[i]]
+    if (!is.null(var.levels)) {
+      cat(sprintf('    <variable name="%s" type="factor">\n', x$var.names[i]), file=file)
+      var.vals <- seq(along=var.levels)
+      for (j in var.vals) {
+        cat(sprintf('      <level name="%s" value="%d"/>\n', var.levels[j], j), file=file)
+      }
+      cat(sprintf('    </variable>\n'), file=file)
+    } else {
+      cat(sprintf('    <variable name="%s" type="numeric"/>\n', x$var.names[i]), file=file)
+    }
+  }
+  cat(sprintf('  </variables>\n'), file=file)
+
+  cat(sprintf('  <partlists>\n'), file=file)
+  M <- length(x$IkPn)
+  for (i in 2:M) {
+    cat(sprintf('    <partlist max="%d">\n', i), file=file)
+    BFs <- x$IkPn[[i]]
+    tab <- x$tablist[[i]]
+    data <- x$datalist[[i]]
+    for (j in seq(along=BFs)) {
+      BF <- BFs[[j]]
+      numsections <- length(BF[[1]])
+      for (K in seq(length=numsections)) {
+        pname <- paste('p', j, sep='')
+
+        cat(sprintf('      <partition name="%s" section="%d" numsections="%d" max="%d" numobs="%d"',
+                    pname, K, numsections, i, tab[j]), file=file)
+
+        if (x$options$outcome.class == "factor") {
+          stopifnot(length(x$coefficients[[i]]) == i)
+          stopifnot(j <= length(x$coefficients[[i]]))
+          lev <- x$y.levels[round(x$coefficients[[i]][j])]
+          if (length(lev) != 1)
+            lev <- 'ERROR'
+          cat(sprintf(' predictedvalue="%s">\n', lev), file=file)
+        } else {
+          stopifnot(length(x$coefficients[[i]]) == i + 1)
+          stopifnot(j + 1 <= length(x$coefficients[[i]]))
+          adjcoef <- x$coefficients[[i]][j + 1] + x$coefficients[[i]][1]
+          cat(sprintf(' predictedvalue="%f">\n', adjcoef), file=file)
+        }
+
+        genImageData(data[[j]], file, pname, tab[j])
+
+        for (P in seq(along=BF)) {
+          range <- BF[[P]][[K]]
+          if (any(is.finite(range))) {
+            var.levels <- x$var.levels[[P]]
+            if (!is.null(var.levels)) {
+              cat(sprintf('        <interval varname="%s" type="factor">\n',
+                          x$var.names[P]), file=file)
+            } else {
+              cat(sprintf('        <interval varname="%s" type="numeric">\n',
+                          x$var.names[P]), file=file)
+            }
+            cat(sprintf('          <range lower="%s" upper="%s"/>\n',
+                        as.character(range[1]), as.character(range[2])), file=file)
+            cat(sprintf('        </interval>\n'), file=file)
+          }
+        }
+        cat(sprintf('      </partition>\n'), file=file)
+      }
+    }
+    cat(sprintf('    </partlist>\n'), file=file)
+  }
+  cat(sprintf('  </partlists>\n'), file=file)
+  cat(sprintf('</partdsaobj>\n'), file=file)
+
+  invisible(NULL)
+}
+
+genImageData <- function(data, file, pname, numobs) {
+  tfile <- tempfile('dsa')
+  png(tfile, width=200, height=200)
+  main <- sprintf("Partition %s (n=%d)", pname, numobs)
+  if (length(data) == 0) {
+    plot(1, 1, main='Length of data is zero')
+  } else if (is.Surv(data)) {
+    plot(survfit(data~1), xlab="Survival Time", ylab="Survival Probability")
+  } else if (is.factor(data)) {
+    tab <- table(data) / length(data)
+    barplot(tab, ylim=c(0, 1), main=main, axes=FALSE)
+    axis(2, at=seq(0, 1, by=0.25))
+  } else {
+    hist(data, ann=FALSE)
+    title(main=main)
+  }
+  dev.off()
+
+  reclen <- 32
+  type <- 'PNG'
+
+  # Open the PNG file we just created for reading
+  fobj <- file(tfile, 'rb')
+  on.exit(close(fobj))
+
+  cat(sprintf('        <image type="%s">\n', type), file=file)
+  repeat {
+    d <- readBin(fobj, raw(), reclen)
+    if (length(d) == 0) {
+      break
+    }
+    cat(sprintf('          <data>%s</data>\n', paste(as.character(d), collapse='')), file=file)
+  }
+  cat('        </image>\n', file=file)
 }

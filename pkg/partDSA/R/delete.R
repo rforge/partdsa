@@ -3,19 +3,7 @@
 ### Delete is a function which takes all available basis functions #
 ###  and looks at combining two possible functions                 #
 ###                                                                #
-### Delete takes the following parameters:                         #
-###  the nxk matrix of basis functions                             #
-### Delete returns the following:                                  #
-###  the k choose 2 matrices of possible deletion                  #
 ####################################################################
-
-### pass in
-### binary matrix of bf - bas.fx
-### the non-binary list of bf - bas.fx.array
-### the outcome, y, weight wt, and data dat
-### do i need these? amat,keep.rss.risks,track.moves,track.moves.ind,f.Io,
-###bas.fx= data.frame(assign.obs.to.bf(dat2=x.tr,n=nrow(x.tr),p=ncol(x.tr),BFs=dynBF))
-###real.LIST<-dynBF
 
 check.del <- function(bas.fx, real.LIST, y, wt, opts) {
   try.del <- best.bfs.to.combine(bas.fx=bas.fx, y=y, wt=wt, opts)
@@ -87,7 +75,7 @@ check.for.contiguous.OR.statments <- function(new.list) {
   while(K < k) { # hold one K and compare to subsequent k's
     compare.mat <- matrix(NA, nrow=p, ncol=(k-K))
     for (P in 1:p) {
-      k.mat <- matrix(unlist(new.list[[P]]), by=T, ncol=2)
+      k.mat <- matrix(unlist(new.list[[P]]), byrow=T, ncol=2)
       compare.mat[P,] <- ifelse(apply(matrix(apply(k.mat, 2, func1, ind.K=K), ncol=2),
                                       1, sum) == 2, 1, 0)
       ## compare.mat is a p by (k-K)

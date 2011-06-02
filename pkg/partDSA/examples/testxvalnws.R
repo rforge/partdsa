@@ -1,10 +1,4 @@
-# customize this as needed
-dsa.loc <- c('/home1/amm226/Rpackages')
-dsa.loc <- dsa.loc[file.exists(dsa.loc)]
-if (length(dsa.loc) == 0)
-  dsa.loc <- NULL
-
-library(partDSA, lib.loc=dsa.loc)
+library(partDSA)
 library(mlbench)
 source('FriedmanData.R')
 
@@ -40,7 +34,7 @@ control <- DSA.control(minbuck=20, cut.off.growth=7)
 time <- system.time(
     results <- partDSA(x=x, y=y, wt=wt,
                        x.test=x.test, y.test=y.test, wt.test=wt.test,
-                       control=control, sleigh=s, lib.loc=dsa.loc))
+                       control=control, sleigh=s))
 print(results)
 cat('New elapsed time: ')
 print(time[[3]])
