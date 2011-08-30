@@ -307,6 +307,8 @@ if(length(class(object))==2){
 		newdata=impute.test(object$x,object$y,newdata1,missing="impute.at.split")
 	}else if (length(which(is.na(newdata1)))>0 & is.null(object$x)){
 		stop("There are missing values in the test set, and in order to impute, save.input must be set to TRUE in the partDSA object")
+        }else{
+	        newdata=newdata1
 	}
 }else{
 	newdata=newdata1
