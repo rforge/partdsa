@@ -1,14 +1,16 @@
+
+
 ## This is the top level of the survival function which is called. The first if clause is for Brier and it repeats the lower level survival function the number of times 
 ##corresponding to the length of the brier.vec. It then sums the risk over these times. The second if clause is for IPCW and just runs the lower risk function once.
 survival.overall.risk <- function(bas.fx,y,wt,opts){
         
-         brier.vec=opts$brier.vec
+         
          if(opts$loss.fx=="Brier"){ 
               ##Defines the function to be called for each cutpoint in Brier.vec 
-              get.each.risk <- function(index){
+              get.each.risk <- function(index, bas.fx, y, wt, opts){
               
                   ##creates a binary y vector given a specific values of T.star
-                   T.star=brier.vec[index]
+                   T.star=opts$brier.vec[index]
                    y.Brier=as.numeric(y[,1]>T.star)
                   
                   ##Finds the corresponding weights for this y vector
@@ -21,17 +23,17 @@ survival.overall.risk <- function(bas.fx,y,wt,opts){
              
               
               ##risks is a list with each element corresponding to the risk for each cutpoint in brier.vec   
-              risks=lapply(1:length(brier.vec),get.each.risk)
-              
-              ## get the overall risk by summing risks for each individual brier cutpoint
-              get.risk=sum(unlist(risks))
+               risks=lapply(1:length(opts$brier.vec),get.each.risk, bas.fx=bas.fx, y=y, wt=wt, opts=opts)
+             ## get the overall risk by summing risks for each individual brier cutpoint. added in multiplication by IBS.wt
+              get.overall.risk=sum(unlist(risks) * opts$IBS.wt)
+
          } else if(opts$loss.fx=="IPCW" ){
              ## For IPCW, just called the survival risk function once.
-             get.risk=survival.risk(bas.fx,y[,1],wt,opts)
+             get.overall.risk=survival.risk(bas.fx,y[,1],wt,opts)
         }
       
 
-	return(get.risk)
+	return(get.overall.risk)
 
 
 
@@ -68,6 +70,16 @@ survival.risk<-function(bas.fx,y,wt,opts){
       ## Then sum the numerats within each basis function and divide by the total weight in that basis function. betas will be predicted values in each basis function.
    
       betas<- apply(bas.fx*numerats,2,sum)/(apply(bas.fx*denomins,2,sum))
+
+      ### Added by KL on 10/25/11 to deal with case when all weights in node are 0
+      if(length(which(is.na(betas)))>0){
+		toReplace=which(is.na(betas))
+		for(k in toReplace){
+			betas[k]=max(y[which(bas.fx[,k]==1)])
+		
+		}
+		
+	 }
       
       ## Get predicted value for each observation by multiplying bas.fx by betas.  
       pred.val <- bas.fx %*% betas
@@ -144,7 +156,7 @@ function(surv.cens, coeff.cox, w, delta, ttilde,deltaMod=delta)
 ################## Assign Survival Weights ###################################################################
 
 ## Note x is only passed in if we are doing IPCW using the cox method to calculate the weights.
-assign.surv.wts <- function (x,y,opts,T.star=T.star){
+assign.surv.wts <- function (x,y,opts,T.star=T.star, cox.vec=cox.vec){
   ##note: default for IPCW in opts will be cox
  
  
@@ -162,9 +174,9 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
      ## if condition means that at least some patients are censored
      if(sum(censC)>0){
     
-  	    mm <- model.matrix(~.,x) 
+  	    mm <- model.matrix(~.,data.frame(x[,cox.vec])) 
   	     
-        keep.for.cox <- apply(data.frame(apply(x,1,is.na)),2,sum)
+        keep.for.cox <- apply(rbind(apply(data.frame(x[,cox.vec]),1,is.na)),2,sum)
         Time.cox<- Time[keep.for.cox==0]
         censC.cox <- censC[keep.for.cox==0]
         cens.cox <- cens[keep.for.cox==0]
@@ -174,16 +186,20 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
         # Get coefficients from cox model
         coeff.cox <- surv.cox$coefficients
         # Get baseline survival
-        surv.cens <- survfit(surv.cox, newdata = data.frame(cov.tr = 0),type = "kaplan-meier")
+            # AMM changed 10/15/11 - DUe to change Therneau made in survfit for baseline for mean instead of 0
+       #surv.cens <- survfit(surv.cox, newdata = data.frame(cov.tr = 0),type = "kaplan-meier")
+        surv.cens <- survfit(surv.cox, type = "kaplan-meier")
+
         #  Vector of baseline survival
         basesurv <- get.at.surv.times(surv.cens, Time.cox)
         # UG(D) for each subject
         ic0 <- get.init.am(basesurv, coeff.cox, cov.tr, cens.cox, Time.cox)
         
         ## what to do with missing data in \bar{G} now give them a one or 0
-        cox.wt1 <- keep.for.cox
-        cox.wt1 <- ic0
-        cox.wt1[keep.for.cox==1] <- cens[keep.for.cox==1]
+          cox.wt1 <- rep(NA,length(keep.for.cox))
+          cox.wt1[keep.for.cox==0] <- ic0
+          cox.wt1[keep.for.cox==1] <- cens[keep.for.cox==1]
+
       
         
     }
@@ -221,7 +237,7 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
 
 }else if(opts$loss.fx=="Brier"){
 
-   #now with loss function as brier, we use kaplan meier to calculate weights
+   #now with loss function as brier, we use kaplan meier or cox to calculate weights
 
   # set T.star to be the next smallest Time value
   T.star.closest=Time[(Time-T.star)>=0][which.min((Time-T.star)[(Time-T.star)>=0])]
@@ -229,37 +245,77 @@ assign.surv.wts <- function (x,y,opts,T.star=T.star){
   #For people with event time after T.star, set their brier time equal to T* in order to find the weight according to Graf equation
   Time_Brier=ifelse(Time>T.star,T.star.closest,Time)
   
-  #create kaplan meier model
-  KMfit=survfit(Surv(Time,censC)~1)
-  
-  
-
-  #calculate weights by finding the "survival" probability corresponding to the given Brier time
-  G=NULL
  
-  for (i in 1:length(Time)){
-    # FIXME: floating point equality is failing, causing exception
-    #G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
-    G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time_Brier[i]))]  # XXX must be better solution
-    if(G[i]<.2){G[i]=.2}
-  }
-  
-  #the actual weight is 1/G
-  KM.wt1<-1/G
+     if (opts$wt.method=="Cox"){
+                       Time_Brier=ifelse(Time>T.star,T.star,Time)
+                       ## if condition means that at least some patients are censored
+               if(sum(censC)>0){
+                       mm <- model.matrix(~.,data.frame(x[,cox.vec]))
+                       keep.for.cox <- apply(rbind(apply(data.frame(x[,cox.vec]),1,is.na)),2,sum)
+                       Time.cox<- Time_Brier[keep.for.cox==0]
+                      censC.cox <- censC[keep.for.cox==0]
+                       cens.cox <- cens[keep.for.cox==0]
+                       cov.tr <- as.matrix(mm[,-1])
+                       surv.cox <- coxph(Surv(Time.cox, censC.cox) ~ cov.tr)
+                       # Get coefficients from cox model
+                       coeff.cox <- surv.cox$coefficients
+                       # Get baseline survival
+                       # AMM changed 10/15/11 - DUe to change Therneau made in survfit for baseline for mean instead of 0
+                       #surv.cens <- survfit(surv.cox, newdata = data.frame(cov.tr = 0),type = "kaplan-meier")
+                       surv.cens <- survfit(surv.cox, type = "kaplan-meier")
+                       #  Vector of baseline survival
+                       basesurv <- get.at.surv.times(surv.cens, Time.cox)
+                       # UG(D) for each subject
+                       ic0 <- get.init.am(basesurv, coeff.cox, cov.tr, cens.cox, Time_Brier,deltaMod=rep(1,length(cens.cox)))
+                       ## what to do with missing data in \bar{G} now give them a one or 0
 
-  #set those people censored before T.star to have weight 0
-  KM.wt1[which(Time<=T.star& cens==0)] <- 0
-  
+                       cox.wt1 <- rep(NA,length(keep.for.cox))
+                       cox.wt1[keep.for.cox==0] <- ic0
+                      cox.wt1[keep.for.cox==1] <- cens[keep.for.cox==1]
 
+                       cox.wt1[which(Time<=T.star& cens==0)] <- 0
+
+
+               }else {
+                       cox.wt1<-cens
+               }
+               return(as.vector(cox.wt1))
+
+               }else if(opts$wt.method=="KM"){
+
+
+                      #create kaplan meier model
+                       KMfit=survfit(Surv(Time,censC)~1)
+					  #calculate weights by finding the "survival" probability corresponding to the given Brier time
+                       G=NULL
  
-  return (KM.wt1)  
+						for (i in 1:length(Time)){
+							# FIXME: floating point equality is failing, causing exception
+							#G[i]<-KMfit$surv[which(KMfit$time==Time_Brier[i])]
+							G[i]<-KMfit$surv[which.min(abs(KMfit$time - Time_Brier[i]))]  # XXX must be better solution
+							if(G[i]<.2){G[i]=.2}
+						}
+  
+						#the actual weight is 1/G
+						KM.wt1<-1/G
 
+						#set those people censored before T.star to have weight 0
+						KM.wt1[which(Time<=T.star& cens==0)] <- 0
+  
+						return (KM.wt1)  
+
+
+				}
+
+	}
 
 }
 
-}
 
-calculate.risk <- function(model, x, y, wt, x.test, y.test, wt.test, opts){
+### We will only go into this function for the brier loss function. We will reassign the coefficients in the model constructed on the
+### training set by recalculating the predicted values based on the binary y and the weight for a given time point.
+calculate.brier.risk <- function(model, x, y, wt, x.test, y.test, wt.test, opts){
+	
    test.set.risk.DSA=array(0,length(model$coefficients))
      #brier.vec is a vector containing the times we are looking at for brier
      brier.vec=opts$brier.vec
@@ -286,7 +342,7 @@ calculate.risk <- function(model, x, y, wt, x.test, y.test, wt.test, opts){
                 #calculate the loss and make cv.risk the sum over all values in brier.vec
                 tmp <- as.vector(wt.test.Brier )* (as.vector(y.test.Brier) - pred.test.DSA) ^ 2
     
-                test.set.risk.DSA <- test.set.risk.DSA + apply(tmp, 2, sum) / sum(wt.test.Brier)
+                test.set.risk.DSA <- test.set.risk.DSA + opts$IBS.wt[i] * apply(tmp, 2, sum) / sum(wt.test.Brier)
                 
      }
      

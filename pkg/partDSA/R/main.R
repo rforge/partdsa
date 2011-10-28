@@ -1,7 +1,7 @@
 worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
                    loss.function, control=DSA.control(),
                    # XXX default values?
-                   wt.method, brier.vec) {
+                   wt.method, brier.vec, cox.vec, IBS.wt) {
   x <- data.frame(get('G.x')[get('G.grp.delt') != cv.ind,])
   y <- if (inherits(get('G.y'), "Surv"))
     get('G.y')[get('G.grp.delt') != cv.ind,]
@@ -18,11 +18,11 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
 
   ## Create weights for IPCW using assign.surv.wts function and the
   ## chosen wt.method
-  if (loss.function == "IPCW") {
+  if (inherits(get('G.y'),"Surv") & loss.function == "IPCW") {
     wt <- assign.surv.wts(x, y=Surv(y[,1], y[,2]),
-        opts=list(loss.fx=loss.function, wt.method=wt.method))
+        opts=list(loss.fx=loss.function, wt.method=wt.method),cox.vec=cox.vec)
     wt.test <- assign.surv.wts(x=x.test, y=Surv(y.test[,1],y.test[,2]),
-        opts=list(loss.fx=loss.function, wt.method=wt.method))
+        opts=list(loss.fx=loss.function, wt.method=wt.method),cox.vec=cox.vec)
   }
 
   ## For Brier, create weights using assign.surv.wts but now we need
@@ -32,15 +32,15 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
   if (loss.function == "Brier") {
     wt <- array(NA, c(nrow(x), length(brier.vec)))
     for (r in seq(along=brier.vec)) {
-      wt[,r] <- assign.surv.wts(y=Surv(y[,1], y[,2]),
+      wt[,r] <- assign.surv.wts(x, y=Surv(y[,1], y[,2]),
           opts=list(loss.fx=loss.function, wt.method=wt.method),
-          T.star=brier.vec[r])
+          T.star=brier.vec[r], cox.vec=cox.vec)
     }
     wt.test <- array(NA, c(nrow(x.test), length(brier.vec)))
     for (r in seq(along=brier.vec)) {
-      wt.test[,r] <- assign.surv.wts(y=Surv(y.test[,1], y.test[,2]),
+      wt.test[,r] <- assign.surv.wts(x.test, y=Surv(y.test[,1], y.test[,2]),
           opts=list(loss.fx=loss.function,wt.method=wt.method),
-          T.star=brier.vec[r])
+          T.star=brier.vec[r], cox.vec=cox.vec)
     }
   }
 
@@ -48,7 +48,7 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
   ty <- rss.dsa(x=x, y=y, wt=wt, minbuck=minbuck,
                 cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                 loss.function=loss.function, control=control,
-                wt.method=wt.method, brier.vec=brier.vec)
+                wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
 
   x.test <- impute.test(x=x,y=y,x.test=x.test,missing=missing)
   pred.test.DSA <- predict(ty, x.test)
@@ -63,14 +63,14 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
              ty$options$loss.fx == "IPCW") {
      tmp <- wt.test * ((y.test[,1] - pred.test.DSA) ^ 2)
      cv.risk <- apply(tmp, 2, sum) / sum(wt.test)
-  } else if (ty$options$loss.fx == "Brier") {
+  } else if (ty$options$outcome.class == "survival" && ty$options$loss.fx == "Brier") {
      ## For brier, calculating the risk is more complicated because
      ## we need to re-determine the coefficients and the wt depending
      ## on the cutpoint and then use that to calculate the risk.
      ## this function (in new functions) adds up the risk over all
      ## the cutpoint values
-     cv.risk <- calculate.risk(model=ty, x, y, wt, x.test, y.test, wt.test,
-                               opts=list(loss.fx="Brier", brier.vec=brier.vec))
+     cv.risk <- calculate.brier.risk(model=ty, x, y, wt, x.test, y.test, wt.test,
+                               opts=list(loss.fx="Brier", brier.vec=brier.vec, IBS.wt=IBS.wt))
   }
 
   c(cv.risk, rep(NA, cut.off.growth - length(cv.risk)))
@@ -102,11 +102,34 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
   ## Survival
   wt.method <- control$wt.method
   brier.vec <- control$brier.vec
+  cox.vec <- control$cox.vec
+  IBS.wt <- control$IBS.wt
+  
+  
+  if( inherits(y, "Surv") && loss.function == "default" ){
+      loss.function <- "IPCW"
+  }
+
   ## Make the default value of brier.vec a single cutpoint equal to
   ## the median of y
   if ((is.null(brier.vec)) && loss.function == "Brier") {
     brier.vec=median(y[,1])
   }
+  
+  if ((is.null(cox.vec)) && wt.method=="Cox" ) {
+     cox.vec=1:ncol(x)
+ }
+
+  if(is.null(IBS.wt) && loss.function== "Brier"){
+    IBS.wt=rep(1,length(brier.vec))
+  }
+
+
+ if(length(IBS.wt)!=length(brier.vec)){
+      stop(paste("The length of brier.vec must be the same length as IBS.wt"))
+  }
+
+
 
   missingness <- apply(x, 2, function(z) sum(as.numeric(!is.na(z))))
   if(length(which(missingness == 0)) > 0)
@@ -117,6 +140,11 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
    stop(paste("Missing values found in dataset and missing is set to 'no'.",
               "Set missing='impute.to.split' to proceed."))
 
+ if (length(which(missingness != dim(x)[1])) > 0 && wt.method=="Cox")
+    stop(paste("Missing values found in dataset and wt.method is set to Cox.",
+              "Set wt.method='KM' to proceed."))
+			  
+			  
   missingness <- apply(x.test, 2, function(z) sum(as.numeric(!is.na(z))))
   if(length(which(missingness == 0)) > 0)
     stop(paste("Some variables in test set are 100% missing:",
@@ -125,6 +153,11 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
   if(length(which(missingness != dim(x.test)[1])) > 0 && missing == "no")
    stop(paste("Missing values found in dataset and missing is set to 'no'.",
               "Set missing='impute.to.split' to proceed."))
+			  
+  if (length(which(missingness != dim(x.test)[1])) > 0 && wt.method=="Cox")
+    stop(paste("Missing values found in dataset and wt.method is set to Cox.",
+              "Set wt.method='KM' to proceed."))
+
 
   # handle the default value for wt.test specially
   if (missing(wt.test)) {
@@ -146,14 +179,14 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck,
                              cut.off.growth, MPD, missing, loss.function,
                              x, y, wt, x.test, y.test, wt.test, control,
-                             wt.method, brier.vec)
+                             wt.method, brier.vec, cox.vec, IBS.wt)
     } else {
       r <- eachWorker(sleigh, worker.init, lib.loc=NULL, x, -1, wt, y)
       lapply(r, function(e) if (inherits(e,'error')) stop(e))
       tree.results <- eachElem(sleigh,worker.leafy,1:control$leafy.num.trees,
                                list(minbuck, cut.off.growth, MPD, missing,
                                     loss.function, x, y, wt, x.test, y.test,
-                                    wt.test, control, wt.method, brier.vec))
+                                    wt.test, control, wt.method, brier.vec, cox.vec, IBS.wt))
       lapply(tree.results,function(e) if(inherits(e,'error')) stop(e))
     }
 
@@ -254,14 +287,14 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         worker.init(lib.loc=NULL, x, grp.delt, wt, y)
         test.risk.DSA <- lapply(1:vfold, worker, minbuck, cut.off.growth,
                                 MPD, missing, loss.function, control,
-                                wt.method, brier.vec)
+                                wt.method, brier.vec, cox.vec, IBS.wt)
       } else {
         r <- eachWorker(sleigh, worker.init, lib.loc=NULL, x, grp.delt, wt, y)
         lapply(r, function(e) if (inherits(e, 'error')) stop(e))
         test.risk.DSA <- eachElem(sleigh, worker, 1:vfold,
                                   list(minbuck, cut.off.growth, MPD,
                                        missing, loss.function, control,
-                                       wt.method, brier.vec))
+                                       wt.method, brier.vec, cox.vec, IBS.wt))
         # test if we got any errors
         lapply(test.risk.DSA, function(e) if (inherits(e, 'error')) stop(e))
       }
@@ -282,27 +315,27 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     }
 
     ## calculate weights for the entire training and test set
-    if (loss.function == "IPCW") {
+    if (inherits(y,"Surv") && loss.function == "IPCW") {
       wt <- assign.surv.wts(x=data.frame(x), y=Surv(y[,1], y[,2]),
-          opts=list(loss.fx=loss.function, wt.method=wt.method))
+          opts=list(loss.fx=loss.function, wt.method=wt.method), cox.vec=cox.vec)
       wt.test <- assign.surv.wts(x=data.frame(x.test),
           y=Surv(y.test[,1], y.test[,2]),
-          opts=list(loss.fx=loss.function, wt.method=wt.method))
+          opts=list(loss.fx=loss.function, wt.method=wt.method),cox.vec=cox.vec)
     }
 
     ## weights for brier can involve a matrix
-    if (loss.function == "Brier") {
+    if (inherits(y,"Surv") && loss.function == "Brier") {
       wt <- array(NA, c(nrow(x), length(brier.vec)))
       for (r in 1:length(brier.vec)) {
-        wt[,r] <- assign.surv.wts(y=Surv(y[,1],y[,2]),
+        wt[,r] <- assign.surv.wts(x=data.frame(x),y=Surv(y[,1],y[,2]),
             opts=list(loss.fx=loss.function,wt.method=wt.method),
-            T.star=brier.vec[r])
+            T.star=brier.vec[r],cox.vec=cox.vec)
       }
       wt.test <- array(NA, c(nrow(x.test), length(brier.vec)))
       for (r in 1:length(brier.vec)) {
-        wt.test[,r] <- assign.surv.wts(y=Surv(y.test[,1], y.test[,2]),
+        wt.test[,r] <- assign.surv.wts(x=data.frame(x.test),y=Surv(y.test[,1], y.test[,2]),
             opts=list(loss.fx=loss.function,wt.method=wt.method),
-            T.star=brier.vec[r])
+            T.star=brier.vec[r],cox.vec=cox.vec)
       }
     }
 
@@ -310,7 +343,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     test2.ty <- rss.dsa(x=x, y=y, wt=wt, minbuck=minbuck,
                         cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                         loss.function=loss.function, control=control,
-                        wt.method=wt.method, brier.vec=brier.vec)
+                        wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
 
     x.test <- impute.test(x=x,y=y,x.test=x.test,missing=missing)
     pred.test.set.DSA <- predict(test2.ty, x.test)
@@ -325,12 +358,12 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
                test2.ty$options$loss.fx == "IPCW") {
       tmp <- wt.test * (as.vector(y.test[,1]) - pred.test.set.DSA) ^ 2
       test.set.risk.DSA <- apply(tmp, 2, sum) / sum(wt.test)
-    } else if (test2.ty$options$loss.fx == "Brier") {
+    } else if (test2.ty$options$outcome.class=="survival" && test2.ty$options$loss.fx == "Brier") {
       # separate function to calculate risk for brier because it needs
       # to be summed over all the cutpoints in brier.vec
-      test.set.risk.DSA <- calculate.risk(model=test2.ty, x, y, wt,
+      test.set.risk.DSA <- calculate.brier.risk(model=test2.ty, x, y, wt,
               x.test, y.test, wt.test,
-              opts=list(loss.fx="Brier", brier.vec=brier.vec))
+              opts=list(loss.fx="Brier", brier.vec=brier.vec, wt.method=wt.method, cox.vec=cox.vec, IBS.wt=IBS.wt))
     }
 
     results <- c(test2.ty,  # inherit all fields from the dsa class

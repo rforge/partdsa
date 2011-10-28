@@ -1,6 +1,6 @@
 rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
                     MPD=0.1, missing="no", loss.function="default",
-                    control=DSA.control(), wt.method="Cox", brier.vec=NULL) {
+                    control=DSA.control(), wt.method="KM", brier.vec=NULL, cox.vec=NULL, IBS.wt=NULL) {
   p <- ncol(x)
   n <- nrow(x)
 
@@ -74,8 +74,11 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
   # on loss function
   if (opts$loss.fx == "IPCW")
     opts$wt.method <- wt.method
-  if (opts$loss.fx == "Brier")
+  if (opts$loss.fx == "Brier"){
     opts$brier.vec <- brier.vec
+	opts$wt.method <- wt.method
+	opts$IBS.wt <- IBS.wt
+	}
   f.Io <- risk.fx(bas.fx=bas.fx, y=y, wt=wt,opts=opts)
 
   keep.rss.risks[[1]] <- f.Io
@@ -206,13 +209,13 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
        get.coef.from.training <- lapply(keep.bas.fx, fun)
        ## note that for the case below we'll be recalculating all the
        ## coefficients for each value in brier.vec  and so these
-       ## coefficents will not be used. however they do determine the
-       ## outputted predicted values for the test set. and we may need
-       ## to change this since we're just using the first column of
-       ## wts. y is still on the original scale which may be good.
+       ## coefficients will not be used for calculating risk. However they do determine the
+	   ## outputted predicted values for the test set. We've decided to make these outputted predicted values to be based on the last brier.vec time point.
     } else if(opts$loss.fx == "Brier") {
-      fun <- function(i) get.coefs(i, dat=x.temp, y=as.numeric(y[,1]>brier.vec[1]), wt=wt[,1])$coef
-      get.coef.from.training <- lapply(keep.bas.fx, fun) 
+       last.brier.vec=length(brier.vec)
+       fun <- function(i) get.coefs(i, dat=x.temp, y=as.numeric(y[,1]>brier.vec[last.brier.vec]), wt=wt[,last.brier.vec])$coef
+       get.coef.from.training <- lapply(keep.bas.fx, fun)
+
     }
   }
 
@@ -307,7 +310,7 @@ if(length(class(object))==2){
 		newdata=impute.test(object$x,object$y,newdata1,missing="impute.at.split")
 	}else if (length(which(is.na(newdata1)))>0 & is.null(object$x)){
 		stop("There are missing values in the test set, and in order to impute, save.input must be set to TRUE in the partDSA object")
-        }else{
+    }else{
 	        newdata=newdata1
 	}
 }else{

@@ -21,7 +21,7 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
             missing="impute.at.split", loss.function="default",
             wt.method="KM", brier.vec=NULL,
             leafy=0, leafy.random.num.variables.per.split=4,
-            leafy.num.trees=50, save.input=FALSE)
+            leafy.num.trees=50, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -74,6 +74,8 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
  For continuous outcomes, the L2 loss function is used.}
 \item{wt.method}{Not documented yet.}
 \item{brier.vec}{Not documented yet.}
+\item{cox.vec}{Not documented yet.}
+\item{IBS.wt}{Not documented yet.}
 \item{leafy}{Not documented yet.}
 \item{leafy.random.num.variables.per.split}{Not documented yet.}
 \item{leafy.num.trees}{Not documented yet.}

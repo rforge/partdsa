@@ -113,8 +113,12 @@ cartsplit <- function(psi, y, wt, x.split, n.cut=6, real.num, opts,is.num) {
     
     ## the denominator of goodness can sometimes be 0 which causes all
     ## goodness values to be NA. do we really need the denominator
-    goodness <- (left.wt * lmean^2 + right.wt * rmean^2) 
-    #/ sum(wt.s.k * y.s.k^2)
+    goodness <- (left.wt * lmean^2 + right.wt * rmean^2) / sum(wt.s.k * y.s.k^2)
+	
+	  if(sum(is.na(goodness))==length(goodness)){
+         STOP <- 1
+	  }else{
+
   
     best.ind <- central.split(which.max(goodness),n)
     max.g <- max(goodness, na.rm=T)
@@ -183,7 +187,7 @@ cartsplit <- function(psi, y, wt, x.split, n.cut=6, real.num, opts,is.num) {
       cant.split <- FALSE
       
     } # end else
-    
+    }
   } # end main code
   if(STOP )  {
     new.lt <- psi

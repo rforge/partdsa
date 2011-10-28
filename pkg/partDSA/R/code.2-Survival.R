@@ -13,19 +13,15 @@ if(opts$loss.fx=="IPCW") {
  return( cartsplit(psi=psi, y=y[,1], wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num) )
 
 
-}else if(length(opts$brier.vec)==1){
+}else if(opts$loss.fx=="Brier" && length(opts$brier.vec)==1){
    
-    if(length(opts$brier.vec)==1){y=as.numeric(y[,1]>opts$brier.vec[1])}
-    else{
-     closest_value=which.min(abs(median(y[,1])-opts$brier.vec))
-     y=as.numeric(y[,1]>opts$brier.vec[closest_value])
-     wt=wt[,closest_value]
-    }
+	y=as.numeric(y[,1]>opts$brier.vec[1])
+    
     return( cartsplit(psi=psi, y=y, wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num) )
 ## more complicated case where we have changing y and wt values depending on which cutpoint we use
-}else{  
+}else if(opts$loss.fx=="Brier" && length(opts$brier.vec)>1){  
      
-     wt.Brier=assign.surv.wts(y=Surv(y[,1],y[,2]),opts=opts,T.star=opts$brier.vec[1])
+    wt.Brier=wt[,1]
     
      y.Brier=as.numeric(y[,1]>opts$brier.vec[1])
 
@@ -80,7 +76,7 @@ if(opts$loss.fx=="IPCW") {
   y.s.k <- y.s.k- sum(y.s.k * wt.s.k) / sum(wt.s.k)
   cant.split <- FALSE
   min.split <- n.cut * 2
-  if(length(unique(x.s.k)) == 1 | length(unique(y.s.k))==1 | length(y.s.k)<min.split | length(which(wt.s.k!=0))<=1) {
+  if(length(unique(x.s.k)) == 1 | length(y.s.k)<min.split | length(which(wt.s.k!=0))<=1) {
     
     STOP <- 1
   } else if(abs(min.split - max(table(x.s.k))) < n.cut &&
@@ -88,6 +84,7 @@ if(opts$loss.fx=="IPCW") {
     STOP <- 1
   } else {  
     
+	if (length(unique(y.s.k))!=1){
     wtsum <- tapply(wt.s.k, x.s.k, sum)
     wtsum<-wtsum[!is.na(wtsum)]
     ysum  <- tapply(y.s.k * wt.s.k, x.s.k, sum)
@@ -102,10 +99,8 @@ if(opts$loss.fx=="IPCW") {
     lmean <- temp/left.wt
     rmean <- -temp/right.wt
     
-    goodness <- (left.wt * lmean^2 + right.wt * rmean^2) 
-    # do we even need this line since we are just interested in max and this is scaling it
-    #/ sum(wt.s.k * y.s.k^2). if we do need it, then we may run into trouble.
-  
+    goodness <- opts$IBS.wt[1] * (left.wt * lmean^2 + right.wt * rmean^2)  / sum(wt.s.k * y.s.k^2)
+  }else{goodness <- NULL}
       
     ##### Need to take into account other brier.vec cutpoints so we loop over all of them and update the weights and y values
     for (k in 2:ncol(wt)){
@@ -144,20 +139,27 @@ if(opts$loss.fx=="IPCW") {
            lmean <- temp/left.wt
     
            rmean <- -temp/right.wt
-           next.goodness <- (left.wt * lmean^2 + right.wt * rmean^2) /
-             sum(wt.s.k * y.s.k^2)
+           next.goodness <-(left.wt * lmean^2 + right.wt * rmean^2) / sum(wt.s.k * y.s.k^2)
            ## combine all goodnesses into a matrix
-           goodness=rbind(goodness,next.goodness)
+           goodness=rbind(goodness,opts$IBS.wt[k] * next.goodness)
         }
   
     } 
     
     ## take a mean over the columns of this matrix
-    if(is.vector(goodness)==1)
-    { goodness=goodness}  else{
-    goodness=apply(goodness,2,mean,na.rm=T)
-    }
-   
+    if(!is.vector(goodness) & !is.null(goodness)){
+	goodness=apply(goodness,2,mean,na.rm=TRUE)
+	}
+	 ### added 10/23/11 - this checks if the goodness values are all NA and if so, it tells us that we can't do a reasonable split on this node so we set STOP=1.
+     ### I'm pretty sure that this scenario corresponds to not having any group 2 observations in the node for any of the time points. And if we only have group 1 and 3 observations,
+      ### then in a sense isn't the node already pure?
+
+    if(is.null(goodness)) {
+         STOP<-1
+      }else if (sum(is.na(goodness))==length(goodness)){
+         STOP <-1
+      }else{
+
 
     
     best.ind <- central.split(which.max(goodness),n)
@@ -222,7 +224,8 @@ if(opts$loss.fx=="IPCW") {
       cant.split <- FALSE
       
     } # end else
-    
+    } # end else
+	
   } # end main code
   if(STOP )  {
     new.lt <- psi
@@ -236,12 +239,12 @@ if(opts$loss.fx=="IPCW") {
   return(list(new.lt=new.lt, new.gt=new.gt,
               val=val, cant.split=cant.split,
               max.g=max.g))
-}
+}  # ends the multiple brier vector scenario
 
     
    
   
-}
+} #end outer function
 
 
 

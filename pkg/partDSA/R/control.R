@@ -2,7 +2,7 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
                         missing="impute.at.split", loss.function="default",
                         wt.method="KM", brier.vec=NULL,
                         leafy=0, leafy.random.num.variables.per.split=4,
-                        leafy.num.trees=50, save.input=FALSE) {
+                        leafy.num.trees=50, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL) {
   if (leafy == 1 && (!is.wholenumber(leafy.num.trees)))
     stop('The number of trees must be a whole number')
 
@@ -39,13 +39,20 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 
   if (!(is.null(brier.vec) || is.numeric(brier.vec)))
     stop('brier.vec must be numeric')
+	
+ if(!(is.null(cox.vec) || is.numeric(cox.vec)))
+      stop('cox.vec must be numeric')
 
+  if(!(is.null(IBS.wt) || is.numeric(IBS.wt)))
+      stop('IBS.wt must be numeric')
+
+ 
   if (!is.logical(save.input))
     stop('save.input must be logical')
 
   list(vfold=vfold, minbuck=minbuck, cut.off.growth=cut.off.growth,
        MPD=MPD, missing=missing, loss.function=loss.function,
-       wt.method=wt.method, brier.vec=brier.vec, leafy=leafy,
+       wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt, leafy=leafy, 
        leafy.random.num.variables.per.split=leafy.random.num.variables.per.split,
        leafy.num.trees=leafy.num.trees, save.input=save.input)
 }
