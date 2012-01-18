@@ -12,5 +12,5 @@ Description: partDSA is a novel tool for generating a piecewise
         based on an intensive and comprehensive search over the entire
         covariate space.
 Depends: R (>= 2.5), survival
-Suggests: nws, MASS, ipred
+Suggests: nws, MASS, ipred, VGAM
 License: GPL-2

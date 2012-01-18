@@ -11,45 +11,46 @@
 
 %% commands
 \def\thanks#1{%\footnotemark
-    \protected@xdef\@thanks{\@thanks
-        \protect\footnotetext[\the\c@footnote]{#1}}%
+	\protected@xdef\@thanks{\@thanks
+		\protect\footnotetext[\the\c@footnote]{#1}}%
 }
 
 
 
 \def\RR{\mbox{\it I\hskip -0.177em R}}\def\RR{\mbox{\it I\hskip
--0.177em R}}
+		-0.177em R}}
 \def\NN{\mbox{\it I\hskip -0.177em N}}\def\NN{\mbox{\it I\hskip
--0.177em N}}
+		-0.177em N}}
 
 
-\title{\pkg{partDSA}: Deletion/Substitution/Addition Algorithm for Partitioning the Covariate Space in Prediction }
+\title{A Partitioning Deletion/Substitution/Addition Algorithm for Creating Survival Risk Groups}
 \Shorttitle{\pkg{partDSA}}
 
-\author{Annette M. Molinaro \\Yale University
-	   \And Steve Weston}
-\Plainauthor{Annette M. Molinaro, Steve Weston}
-\Keywords{recursive partitioning}
+\author{Karen Lostritto \\Yale University \And Annette M. Molinaro \\Yale University
+	\And Steve Weston}
+\Plainauthor{Karen Lostritto, Annette M. Molinaro, Steve Weston}
+\Keywords{recursive partitioning,Survival}
 
-\Abstract{
-	
-	The \pkg{partDSA} package \citep{partDSAsoftware} provides  a novel recursive partitioning tool   
-	 for prediction when numerous variables jointly affect the outcome.   In such settings, piecewise 
-	 constant estimation provides an intuitive approach by elucidating interactions and correlation 
-	 patterns in addition to main effects.  As well as generating \textit{'and'} statements similar 
-	 to previously described methods, \pkg{partDSA} explores and chooses the best among all possible 
-	 \textit{'or'} statements. The immediate benefit of \pkg{partDSA} is the ability to build a 
-	 parsimonious model with \textit{'and'} and \textit{'or'} conjunctions. Currently, \pkg{partDSA} 
-	 is capable of handling categorical and continuous explanatory variables and outcomes. This 
-	 vignette provides a guide for analysis with the \pkg{partDSA} package while the actual 
-         algorithm is introduced and thoroughly described in
-         \cite{partDSApaper}. 
+\Abstract{ 
 
-}
+As an extension of the \pkg{partDSA} package \citep{partDSAsoftware}, we present the \pkg{partDSA} Survival package
+to accommodate survival outcomes. The algorithmic methodology of \pkg{partDSA} is described in \cite{partDSApaper}, and
+the extension of partDSA to survival outcomes is described in \cite{partDSASurvivalpaper}. 
+PartDSA creates a piecewise constant model for predicting an outcome of interest from 
+a complex interaction of covariates. This model consists of "and/or" boolean statements on covariates such that
+each statement defines a group of observations which are assigned a constant predicted value. The creation of a partDSA model
+is guided by a specified loss function, and in the case of a survival outcome this loss function must be modified to accommodate
+a censored outcome.  The functionality of partDSA for categorical and continuous outcomes is described in the partDSA vignette and here we 
+describe the new functionality for survival data.
 
 
 
-\begin{document}\thanks{Copyright \copyright 2010.}
+} 
+
+
+
+
+\begin{document}\thanks{Copyright \copyright 2011.}
 
 
 
@@ -57,428 +58,341 @@
 \section{Introduction}
 
 
+The Partitioning Deletion/Substitution/Addition algorithm initiates with
+all observations in a single group and splits and recombines observations in order
+to exhaustively search potential models.  A list of the best models of each size is created,
+and a cross-validation procedure is employed to select the best model size.
 
-Classification and Regression Trees (CART) \citep*{Breiman}, a
-binary recursive partitioning algorithm, allows one to explore the
-individual contributions of various covariates as well as their
-interactions for the purposes of predicting outcomes.  The end
-product of CART is a list of \textit{'and'} statements. For example,
-a CART tree is illustrated in Figure \ref{fig:tree}. In this tree there
-are two variables (diagnosis age, a continuous variable, and tumor
-grade, an ordered variable) and the outcome is number of positive lymph nodes, a
-continuous variable. Thus, the parameter of interest is the
-conditional mean of the number of positive nodes given the covariates and
-the chosen loss function is the squared error. The splitting and
-pruning (details can be found in \cite{Breiman}) are based on the
-$L_2$ loss function and result in a tree with three terminal nodes.
-The final predictor can be read as: if a patient is less than $50$
-years of age, her predicted number of positive nodes is $\beta_1$; if a
-patient is over $50$ \textit{and} her tumor grade is less than or
-equal to $2$, her predicted number of positive nodes is $\beta_2$; if a
-patient is over $50$ \textit{and} her tumor grade is greater than
-$2$, her predicted number of positive nodes is $\beta_3$.
-
-
-
-\begin{figure}
-\center
-\includegraphics[angle=0,width=3.5in]{Tree3DiffOut}
-\caption{{\em Classification and Regression Tree Example.} This tree
-shows an example of recursive binary partitioning using CART with
-the variables 'Diagnosis Age' and 'Tumor Grade'. The terminal nodes have predicted values $\beta_1,\beta_2,\mbox{ and},
-\beta_3$.} \label{fig:tree}
-\end{figure}
-
-Although the importance of such statements is not in debate, there
-are settings where the \textit{'and'} statement ordering does not
-accurately account for all of the observed biological
-phenomena. Figure \ref{fig:tree2} illustrates the scenario when the number of positive nodes 
-is similar for women under 50 years of age and those over 50
-whose tumor grade is less than or equal to $2$, i.e. $\beta_1 = \beta_2$. The resulting
-model can be written as two partitions including an \emph{'or'}
-statement as opposed to three terminal nodes consisting of three
-individual \emph{'and'} statements. 
-
-\begin{figure}
-\center
-\includegraphics[angle=0,width=3.5in]{Tree2DiffOut}
-\caption{{\em Two terminal nodes with similar outcome.}  } \label{fig:tree2}
-\end{figure}
-
-
-The final predictor can be read as: if a patient is less than $50$
-years of age \textbf{\emph{OR}} if a
-patient is over $50$ \textit{and} her tumor grade is less than or
-equal to $2$,
-her predicted number of positive nodes is $\beta_1$;   if a
-patient is over $50$ \textit{and} her tumor grade is greater than
-$2$, her predicted number of positive nodes is $\beta_2$. This 
- model can be drawn as shown in Figure
-\ref{fig:tree3}. Thus, as well as generating \textit{'and'} statements
-similar to CART, \pkg{partDSA} explores and chooses the best among all possible 
-	 \textit{'or'} statements. The immediate benefit of
-         \pkg{partDSA} is the ability to build a stable and 
-	 parsimonious model with \textit{'and'} and \textit{'or'} conjunctions.
-
-\begin{figure}
-\center
-\includegraphics[angle=0,width=3.5in]{TreepartDSA2}
-\caption{{\em Example of \emph{'or'} statement.}  } \label{fig:tree3}
-\end{figure}
-
-
-To illustrate \pkg{partDSA}, in Section \ref{s:obsdata} we begin by
-describing \pkg{partDSA} with  observed data and default settings
-and then describe the user-defined control parameters. Subsequently, in
-Section \ref{s:examples} we detail  examples. 
-
-
-
-\section{partDSA}\label{s:obsdata}
-
-
-In the prediction problem, we are interested in building and evaluating the performance of a rule or procedure fitted to $n$ independent observations, corresponding to the $n$ independent subjects in a study. Accordingly, we observe a random sample of $n$ $i.i.d.$ observations $W_1, \ldots, W_n$, where $W = (Y,X)$  contains an outcome $Y$ and a collection of $p$ measured explanatory variables, or features, $X = (X_1,...,X_p)'$. For example, in microarray experiments $X$  includes RNA or protein expression, chromosomal amplification and deletions, or epigenetic changes; while in proteomic data, it includes the intensities at the mass over charge (m/z) values. The collection of features may also contain explanatory variables measured in the clinic and/or by histopathology such as a patient's age or tumor stage. We denote the distribution of the data structure $W$ by $F_{W}$.  The variables which constitute  $X$ can be measured on a continuous, ordinal, or categorical scale. Although this covariate process may contain both time-dependent and time-independent covariates we will focus on the time-independent $X$. The outcome $Y$  may be a continuous measure such as tumor size, a categorical or ordinal measure such as stage of disease, or a binary measure such as disease status.
-
-For an example we will generate a training sample with a categorical
-outcome $Y$ and two continuous covariates, $X_1$ and $X_2$. 
-<<results=tex>>=
-y.out=as.factor(sample(c("a", "b", "c"), 50, TRUE) )
-x1=rexp(50)
-x2=runif(50)
-@ 
-
-To load the \pkg{partDSA} package and run the algorithm with default
-settings we type:
-
-<<results=tex>>=
-library(partDSA)
-#model1<-partDSA(x=data.frame(x1,x2),y=y.out)
-@ 
-
-If an independent test set is available it can be provided to assess
-how well the model built on the training set performs on the
-independent test set. For illustration we will generate a larger test
-set from the same distribution as the training set:
-
-<<results=tex>>=
-y.out.test=as.factor(sample(c("a", "b", "c"), 100, TRUE) )
-x1.test=rexp(100)
-x2.test=runif(100)
-@ 
-
-The independent test set is included as:
-<<results=tex>>=
-model2<-partDSA(x=data.frame(x1,x2),y=y.out,x.test=data.frame(x1=x1.test,x2=x2.test),y.test=y.out.test)
+The loss function plays an important role in the model creation process. The goal of minimizing 
+a given loss function guides the choice of the best next step in the iterative model generation process, the choice of 
+the best predicted value, and ultimately the choice of the best model size. In survival data, the outcome is a time to event 
+but in medical studies, many patients will not have experienced this event by the end of the study or they will have dropped out of 
+the study before experiencing the event. These patients will not have a time to event, but rather a time last seen event-free. This time 
+is recorded and these patients are referred to as "censored". The outcome given to partDSA contains both a continuous time $T$ (either time to event 
+or last time seen event free) and a binary censoring variable $\delta$ (where a 1 corresponds to a patient who has had the event and a 0 corresponds to a censored 
+patient who has not had the event).  The \textit{Surv} function in the Survival library creates a "survival" outcome from $T$ and $\delta$ as shown 
+below:
+<<echo=FALSE>>=
+options(width=70) 
+@
+<<echo=T>>=
+library(survival)
+T=rexp(25)
+delta=sample(0:1,25,TRUE)
+y=Surv(T,delta)
+y
 @
 
-If \textbf{x.test} and \textbf{y.test} are not specified the default
-values are \textbf{x} and \textbf{y}, respectively. Case weights can also be specified for the training set via the
-\textbf{wt} argument and for the test set via the \textbf{wt.test}
-argument. By default both are set to vectors of 1's of length equal to the
-training and test sets, respectively. 
+In this guide, we will discuss two different partDSA options which allow for the application of this algorithm to survival data.
+Both modifications make use of a weighting scheme applied to the $L_2$ loss function for continuous outcomes: 
 
 
-\subsection{Parallel Computing}
-Cross-validation is employed in order to select the best model in
-\pkg{partDSA}. To address this added computational burden an optional
-sleigh object can be specified which allows the cross-validation to be
-performed in parallel using the \pkg{nws} package.  By default the cross-validation is run
-sequentially. 
+\begin{equation} L(X,\psi) = (Y - \psi(W))^2 \end{equation}
 
-An example of running \pkg{partDSA} in parallel with two workers is:
-
-\begin{verbatim}
-s <- sleigh(verbose=TRUE, workerCount=2)
-stat <- status(s, TRUE, 60)
-cat(sprintf('Running a sleigh with %d workers\n', stat$numWorkers))
-model3<-partDSA(x=data.frame(x1,x2),y=y.out,sleigh=s)
-\end{verbatim}
+As described in the \pkg{partDSA} vignette, continuous outcome data $W_1,...,W_n$ represent the n observations 
+where $W=(Y,X)$ such that Y is the outcome and X is a vector of p covariates, $X=(X_1,...,X_p)$ and $\psi$ is the prediction rule.
+As described above, for survival data, if Y is the time to event, this value is missing (censored) for some observations,
+requiring a modification to the $L_2$ loss function approach. The two modifications 
+implemented in partDSA are the IPCW weighting scheme and the Brier weighting scheme, both of which we demonstrate
+on simulated data. Finally we present an example on the German Breast Cancer dataset.
 
 
 
-\section{Control Parameters}
+\section{IPCW Weighting Scheme}
 
-In addition to the training and test sets and corresponding weights,
-the user can specify numerous parameters via the control object. The
-control object is created by calling the DSA.control function. 
- 
-\begin{verbatim}
-DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1, 
-            missing="default", loss.function="default")
-\end{verbatim}
-
-The default values for each of the parameters are chosen by calling
-DSA.control with no arguments, i.e.
-
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control())
-\end{verbatim}
-
-\subsection{vfold}
-Cross-validation is used to select the best model among those
-generated \citep{Molinaro08012005,MolinaroLostrittoBioChapter}. As such, \pkg{partDSA} initially splits the training set
-into $v$-folds. For each of $v$ times,  $v-1$ of the folds are used to build up to $M=$\emph{cut-off-growth}
-models (each of which is the best model for $1,\cdots, M$
-partitions). Subsequently,  the one fold left out of model
-building is used to assess the performance of the associated
-model. Once all $v$-folds have run, the cross-validated error is
-calculated as the average squared-error (for a continuous outcome) or
-misclassification error (for a categorical outcome)  over the $v$-folds for each of the possible partitions,
-$1,\cdots, M$. By default $vfold=10$ and $10$-fold cross validation is
-performed. For a training set of size $n$, if $vfold$ is set equal to $n$
-it is equivalent to running leave-one-out cross-validation.  For
-exploratory purposes and if no model selection is needed, $vfold$ can
-be set to 1 to avoid any cross-validation. That is, to just build a
-model without 
-cross-validation, we can specify:
-
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(vfold=1))
-\end{verbatim}
+In the IPCW Weighting Scheme, only uncensored observations contribute directly to the loss function. The contribution of each
+uncensored observation to the loss function is given a weight, calculated using all of the observations. The details of this weight calculation 
+are described in \cite{partDSASurvivalpaper}. The concept is that uncensored observations who were likely to have been censored by their
+event time will be given a  higher weight and uncensored observations who were unlikely to have been censored by their event time will be given
+a lower weight. These weights are calculated either with a Kaplan Meier estimate or a Cox estimate. This choice can be specified in the wt.method
+parameter in DSA.control, which is either set to "Cox" or "KM", with a default value of "KM". Using the "KM" option does not take into account
+the covariate values when calculating the weights whereas the "Cox" option calculates the weights based on the covariate values. In small sample
+sizes, it is safer to use the "KM" option because there is less of a chance of running into errors in the coxph function, but if there is 
+informative censoring, it may be worthwhile to choose the "Cox" option. Both options are shown below on a simulation study.
 
 
-\subsection{minbuck}
-Minbuck is the minimum number of observations that can be in a
-partition. In order to split a partition into two (either via the Addition
-or Substitution steps) there must be at least $2*minbuck$
-observations. By default minbuck is set equal to 6,  to specify a minimum of 15 observations in any
-partition, we can write:
+\subsection{Simulation Code}
 
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(minbuck=15))
-\end{verbatim}
-
-\subsection{cut-off-growth}
-Cut-off-growth is the maximum number of partitions that will be
-explored. The more partitions that are examined the more the
-computational burden and likelihood of overfitting, thus
-cut-off-growth has a default value of 10. To specify a different
-value, we type:
-
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(cut.off.growth=15))
-\end{verbatim}
-
-\subsection{MPD}
-Minimum percent difference, or MPD, is the smallest percentage by
-which the next move (Addition, Substitution, or Deletion) must
-improve the current fit (i.e., the reduction in the empirical
-risk). The larger the percentage is the bigger the improvement and the
-fewer possible moves to consider. By default $MPD = 0.1$, or 10\%. To
-change $MPD$ to 30\%, we can specify:
-
-
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(MPD=0.3))
-\end{verbatim}
-
-
-
-
-\subsection{Missing values}
-
-
-Currently, \pkg{partDSA} can accomodate missing values in the
-covariates via imputation. As such, there are two settings for the missing value argument
-named $missing$: ``no''
-and ``impute.at.split''. $Missing$ set to "no" indicates that there is
-no missing data and will create an error if missing data is found in
-the dataset.  By default $missing="no"$. For missing covariate data, \pkg{partDSA} will employ a data imputation method similar to that in 
-CRUISE (Kim and Loh, 2001) with $missing="impute.at.split"$. Where at each split, the non-missing observations for a given variable are used to find 
-the best split, and the missing observations are imputed based on the mean or mode (depending on whether the 
-variable is categorical or continuous) of the non-missing observations in that node. Once the node assignment of 
-the missing observations is determined using the imputed values, the imputed values are returned to their missing 
-state. For missing values in the test set, the grand mean or mode from the corresponding variables in the training 
-set are used. Including variables which are entirely missing will
-result in an error. To set $missing$ to ``impute.at.split'', we type:
-
-\begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(missing="impute.at.split"))
-\end{verbatim}
-
-\subsection{Loss Functions for Univariate Prediction}\label{s:lossNA}
-
-\pkg{partDSA}  employs loss functions for two key stages of model building: separating the observed sample into
-different groups (or partitions) and selecting the final prediction
-model. The general purpose of the loss function $L$ is to quantify performance.
-Thus, depending on the parameter of interest, there could be
-numerous loss functions from which to choose. If the outcome $Y$ is continuous, frequently, the
-parameter of interest is the conditional mean $\psi_0(W) = E[Y \mid
-W]$ which has the corresponding squared error loss function,
-$L(X,\psi) = (Y - \psi(W))^2$. 
-
-If the outcome $Y$ is categorical, the parameter
-    of interest involves the class conditional probabilities,
-    $Pr_0(y|W)$. For the indicator loss function, $L(X,\psi) = I(Y
-    \neq \psi(W))$, the optimal parameter is $\psi_0(W) = {\rm argmax}_y
-    Pr_0(y \mid W)$, the class with maximum probability given
-    covariates $W$. One could also use a loss
-    function which incorporates differential misclassification costs. Note that in the standard CART methodology,
-\cite{Breiman}
-favor replacing the indicator loss function in the
-    splitting rule by measures of node impurity, such as the entropy,
-    Gini, or twoing indices (Chapter 4).  The indicator loss function
-    is still used for pruning and performance
-    assessment. It turns out that the entropy criterion
-    corresponds to the negative log-likelihood loss function,
-    $L(X,\psi) = -\log \psi(X)$, and parameter of interest $\psi_0(X)
-    = Pr_0(Y|W)$. Likewise, the Gini criterion corresponds to the loss
-    function $L(X,\psi) = 1 - \psi(X)$, with parameter of interest $\psi_0(X)
-    = 1$ if $Y= {\rm argmax}_y Pr_0(y \mid W)$ and 0 otherwise. At the
-    current time \pkg{partDSA} is enabled for the $L_2$ or squared error loss
-    function (the default) for continuous outcomes and either the Gini (``gini'')
-    or entropy (``entropy'', the default)
-    loss functions for categorical outcomes. The loss function can be
-    specified in \texttt{DSA.control}:
- 
-
-\begin{verbatim}
-> model2<-partDSA(x=data.frame(x1,x2),y=y.out,
-                control=DSA.control(loss.function="gini"))
-\end{verbatim}
-
-
-
-\section{Output and Viewing the partitions}
-Once \pkg{partDSA} has run the outcome can be examined by using the
-\texttt{print()} statement. For example, using the previously
-generated data we can run the algorithm with only up to two partitions:
-
-<<results=tex>>=
-model4<-partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(missing="no",cut.off.growth=2))
-@ 
-
-And then look at the results by typing:
-
+In this code, a training set of size 250 and a test set of size 5000 were created. Five covariate values were simulated where the first two 
+determine the scale parameter and thus the time to event. The remaining three covariates are noise variables.
+Censoring times are simulated from a uniform distribution in order to achieve a thirty percent censoring level.  Survival times are truncated
+at the 95th percentile.  In \cite{partDSASurvivalpaper}, this simulation corresponds to multivariate simulation 1 with high signal. The low signal 
+version uses values of 1 and 0.5 for the scale parameter instead of 5 and 0.5.
 
 <<echo=T>>=
-print(model4)
-@ 
 
+library(VGAM)
+library(partDSA)
+set.seed(1)
+p=5
+tr.n=250
+ts.n=5000
+C_level=0.3
 
-\hspace{1cm}
-The first item is the table summarizing the average cross-validated
-error over the vfolds, the standard error for the cross-validated
-error, and the test set risk. Each is reported for up to
-$M=2=cut.off.growth$ partitions. The second item labeled 'Outcome' is the predicted
-outcome for each partition. In our example, if only one partition is
-chosen (i.e. all observations are together) the
-predicted outcome is
-``\Sexpr{model4$y.levels[model4$coeff[[1]]]}''. If two partitions are
-chosen then the first partition has predicted outcome ``\Sexpr{model4$y.levels[model4$coeff[[2]][1]]}`` and the
-second has predicted outcome
-``\Sexpr{model4$y.levels[model4$coeff[[2]][2]]}``.  The description of
-how the partitions are defined follows. In this example we 
-specified a maximum of 2 partitions, thus, we only see the
-description for the best of 2 partitions. The final item is the variable importance matrix. This
-matrix simply keeps track of how many times each variable defines a
-partition. The variables are listed as rows and the partitions as
-columns (here COG = cut-off-growth). For example, for COG = 1  neither of
-the variables define the one partition because all observations are
-kept in one partition with no splitting. For COG = 2, x1 is used to
-define \Sexpr{model4$var.importance[,2][1]} of the two total
-partitions and x2 is used to define
-\Sexpr{model4$var.importance[,2][2]} of the two total partitions. \\
-
-In order to view the partitions Java must be installed. For example to see a the two partitions for our running example we type:
-\begin{verbatim}
-> showDSA(model4)
-\end{verbatim}
-
-There are three windows in the output shown in Figure \ref{fig:part1}.
-The Node Browser, i.e. the top-left window, lists the best of each
-number of allowed partitions (from $1,\cdots,M=cut-off-growth$)  and allows
-the user to navigate through the different splits and into the final
-partitions by clicking. The right window displays what is chosen in
-the Node Browser window.  For example, here we see that in the
-Node Browser window 'Best two partitions' is highlighted and in the right
-window we see the visual of those two partitions. Namely, observations
-with a value of x1 greater than 0.77 are assigned to the left
-partition with predicted outcome ``b''. Observations with an x1 value
-less than 0.77 are assigned to the right partition with predicted
-outcome ``a''. \\
-
-The bottom-left window, labeled 'Selected Node',  becomes active once a final
-partition is highlighted in the Node Browser window. This is shown in
-Figure \ref{fig:part2}. Now note that in the Node Browser window the final partition labeled with
-the predicted outcome ``b'' is highlighted and the pathway from the
-orignating partition to the final partition is highlighted in the
-right window. The Selected Node window is now active and reports
-information such as the predicted value and how
-many observations from the training set are contained in the final
-partition and thus estimate the predicted value. Additional
-information such as the section and number of sections inform the user
-as to if this final partition stands alone or is part of an 'or'
-statement ordering. 
-
-
-
-\begin{figure}[ht]
-\centering
-\subfigure[{\em Visualization of Model4 with two partitions.}]{
-\includegraphics[scale=.5]{part12}
-\label{fig:part1}
+x=matrix(NA,tr.n,p)
+for (j in 1:p){
+x[,j]=sample(1:100,tr.n,replace=TRUE)
 }
-\subfigure[{\em Visualization of Model4 with two partitions and one final
-    partition highlighted.}]{
-\includegraphics[scale=.5]{part22}
-\label{fig:part2}
+x=data.frame(x)
+names(x)=c(paste("X",1:p,sep=""))
+
+x.test=matrix(NA,ts.n,p)
+for (j in 1:p){
+x.test[,j]=sample(1:100,ts.n,replace=TRUE)
 }
-\label{fig:subfigureExample}
-\caption{Visualization of Partitions}
-\end{figure}
+x.test=data.frame(x.test)
+names(x.test)=c(paste("X",1:p,sep=""))
 
+scale=ifelse(x[,1]>50|x[,2]>75,5,.5)
+time=data.frame(rgpd(tr.n,0,scale,0))
+scale.test=ifelse(x.test[,1]>50|x.test[,2]>75,5,.5)
+time.test=(rgpd(ts.n,0,scale.test,0))
 
+group2=which(x[,1]>50|x[,2]>75)
+group1=c(1:tr.n)[-group2]
 
-
-\section{Examples} \label{s:examples}
-
-
-
-\subsection{Categorical outcome}
-The German Breast Cancer Study Group (GBSG2) datai is a prospective
-controlled clinical trial on the treatment of node positive breast
-cancer patients \citep{GBSG}. The data (available within the ipred
-package) contains 686 women with seven prognostic factors measured. 
-For this analysis we will predict recurrence by using the censoring status (0 = uncensored, 1
-= censored). 
-
-
-
-<<echo=T>>=
-data("GBSG2", package = "ipred")
-mdl1<-partDSA(x=data.frame(GBSG2[,c(1:8)]),y=as.factor(GBSG2$cens),control=DSA.control(cut.off.growth=5,loss.function="gini",minbuck=10))
-print(mdl1)
-@ 
-\begin{verbatim}
-> showDSA(mdl1)
-\end{verbatim}
-
-An example of the partDSA model is shown in
-Figure \ref{fig:gbsg1}. The following can be read from the visualization:
-
-\begin{itemize}
- \item If the patient has less than 3 positive nodes (pnodes) she has
-   a predicted outcome of 0 (p1: 0).
-   \item If the patient has greater than 21 positive nodes (pnodes)
-     \textbf{OR} between 9 and 21 positive nodes and has estrogen
-     receptor value less than or equal to 0 fmol (estrec) \textbf{OR}  between
-     3 and 9 positive nodes and tumor size < 20 and age < 54, she has
-     a predicted outcoem of 0 (p2:0).
-     \item If the patient has between 9 and 21 positive nodes (pnodes)
-       and an estrogen receptor value greater than 0 (estrec), she has
-       a predicted outcome of 1 (p3:1).
-       \item If the patient has between 3 and 9 positive nodes
-         (pnodes) and tumor size greater than 20, she has a predicted
-         outcome of 1 (p4:1).
+level1=0
+level2=0
+cens.time=NULL
+while((abs(C_level-level1)>.02)|(abs(C_level-level2)>.02)){
+ cens1.time=runif(length(group1),0,1.25)
+   cens2.time=runif(length(group2),0,15)
+   
+   cens1=apply(cbind(cens1.time,time[group1,]),1,which.min)-1
+   cens2=apply(cbind(cens2.time,time[group2,]),1,which.min)-1
   
-  \end{itemize}
+   level1=1-sum(cens1)/length(cens1)
+   level2=1-sum(cens2)/length(cens2)
+  
+}
+cens.time[group1]=cens1.time
+cens.time[group2]=cens2.time
+y0=apply(cbind(cens.time,time),1,min)
+cens0=apply(cbind(cens.time,time),1,which.min)-1
 
-\begin{figure}
-\center
-\includegraphics[angle=0,width=6in]{GBSG1}
-\caption{\emph{German Breast Cancer Study Group Example}  } \label{fig:gbsg1}
-\end{figure}
+L = quantile(y0,.95)
+y = pmin(y0,L)
+cens = cens0
+cens[y0 > y] = 1
+
+y.new=y
+y=log(y)
+
+
+y.new.test <- time.test
+y.new.test <- pmin(y.new.test,L)
+y.test=log(y.new.test)
+cens.test=rep(1,ts.n)
+
+
+wt=rep(1,tr.n)
+wt.test=rep(1,ts.n)
+detach(package:VGAM)
+
+model.KM.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="IPCW",wt.method="KM",missing="no",cut.off.growth=4))
+model.Cox.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="IPCW",wt.method="Cox",missing="no",cut.off.growth=4))
+ 
+
+
+
+@
+
+\subsection{Output}
+
+
+The output shown below is similar to that for the usual partDSA model. In both cases the minimum error plus one standard error
+occurs for the model with two partitions,
+and we can see that the structure of the model recovers the underlying structure of the simulated data with cutpoints close to those 
+of 50 and 75. The coefficients represent the predicted log of the survival time. In both models we see that the first partition has a much lower survival time than does 
+the second partition. Therefore those observations in the first partition are predicted to be at a higher risk. This is in accordance with
+the data set-up.
+
+
+
+<<echo=T>>=
+model.KM.IPCW
+
+model.Cox.IPCW
+@
+
+
+
+
+
+\section{Brier Weighting Scheme}
+
+
+In contrast to the IPCW method shown below, Brier allows for some censored observations to be included directly into the loss function. In order to
+do this, Brier selects a specific time point t* (or several time points) and evaluates whether an observation has had the event by this time point.
+For uncensored observations, an observation is assigned a 0 if the observation has experienced the event by t* and a 1 if the observation has not 
+experienced the event by t*. Observations censored past the t* will receive an outcome of a 1 because they have not experienced the event by t*.
+Observations censored before t* cannot be included into the loss function directly because we are unsure as to whether they have experienced the
+event by t*.  Unlike in IPCW where the predicted outcome is a survival time, in Brier, the predicted outcome is a probability of not having experienced
+the event by t*.  The weights are found using all observations, censored and uncensored, with the Kaplan Meier method. In the partDSA function, 
+we still provide the same outcome (Surv(y,cens)) and we specify the loss function to be "Brier".
+We can select a single value for t* or a vector of values for t* such that
+the sum of the loss for each t* value is minimized. Note that selecting a vector of values for t* will increase the running time.
+If no t* value is selected, the default t* will be the median of the observed times.
+
+
+\subsection{Simulation Code}
+
+A similar covariate set-up will be applied for the second multivariate simulation in \cite{partDSASurvivalpaper}.  The corresponding
+low signal simulation replaces the 4 in the theta definition with a 1.  The code is shown below
+<<echo=T>>=
+
+tr.n=250
+ts.n=5000
+p=5
+C_level=0.3
+
+set.seed(1)
+
+library(VGAM)
+
+x=matrix(NA,tr.n,p)
+for (j in 1:p){
+x[,j]=runif(tr.n)
+}
+x=data.frame(x)
+names(x)=c(paste("X",1:p,sep=""))
+
+x.test=matrix(NA,ts.n,p)
+for (j in 1:p){
+x.test[,j]=runif(ts.n)
+}
+x.test=data.frame(x.test)
+names(x.test)=c(paste("X",1:p,sep=""))
+
+theta=4*as.numeric(x[,1]<=.5 | x[,2]>.5)
+psi=exp(theta)
+shape=0
+scale=1/psi
+location=0
+time=data.frame(rgpd(tr.n,location, scale,shape))
+group2=which(scale==unique(scale)[1])
+group1=which(scale==unique(scale)[2])
+
+theta=4*as.numeric(x.test[,1]<=.5 | x.test[,2]>.5)
+psi=exp(theta)
+shape=0
+scale.test=1/psi
+location=0
+time.test=rgpd(ts.n,location, scale.test,shape)
+level1=0
+level2=0
+cens.time=NULL
+upper1=3.5
+upper2=.1
+
+while((abs(C_level-level1)>.02)|(abs(C_level-level2)>.02)){
+   
+   cens1.time=runif(length(group1),0,upper1)
+   cens2.time=runif(length(group2),0,upper2)
+   
+   cens1=apply(cbind(cens1.time,time[group1,]),1,which.min)-1
+   cens2=apply(cbind(cens2.time,time[group2,]),1,which.min)-1
+  
+   level1=1-sum(cens1)/length(cens1)
+   level2=1-sum(cens2)/length(cens2)
+   if(abs(level1-C_level)>.1){ upper1=ifelse(level1>C_level,upper1+.1,upper1-.05)}
+   if(abs(level2-C_level)>.1){upper2=ifelse(level2>C_level,upper2+.01,upper2-.01)}
+ 
+}
+
+
+if(C_level==0){
+y0=time[,1]
+cens0=rep(1,tr.n)
+}else{
+cens.time[group1]=cens1.time
+cens.time[group2]=cens2.time
+y0=apply(cbind(cens.time,time),1,min)
+cens0=apply(cbind(cens.time,time),1,which.min)-1
+}
+
+L = quantile(y0,.95)
+y = pmin(y0,L)
+cens = cens0
+cens[y0 > y] = 1
+
+
+y.new=y
+y=log(y)
+
+
+y.new.test <- time.test
+y.test=log(time.test)
+cens.test=rep(1,ts.n)
+
+
+wt=rep(1,tr.n)
+wt.test=rep(1,ts.n)
+detach(package:VGAM)
+
+
+model1.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=-3.9237))
+model2.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=quantile(y,c(.25,.5,.75))))
+ 
+@
+
+\subsection{Output}
+
+If we examine the Brier models and look at the minimum plus one standard error of the cross-validated error, we would select a model of size
+two. We see that both models yield a model similar to the original data structure. However, now note that the predicted outcome is a probability,
+i.e. between 0 and 1, of not having had the event by t*. Therefore, those observations in partition 2 are less likely to experience the event
+by t* which is in line with the results found with the IPCW models above where observations in partition 2 had higher survival times.
+
+
+
+
+<<echo=T>>=
+model1.Brier
+
+model2.Brier
+@
+
+
+
+\section{Data Example}
+
+We now demonstrate the application of both partDSA with the IPCW weighting scheme and the Brier weighting scheme on the German Breast 
+Cancer Study Data.  The goal in this dataset is to predict the survival time from the covariates: hormone therapy, age, menopausal status,
+tumor size, tumor grade, positive nodes, progesterone receptor, and estrogen receptor.
+
+
+<<echo=T>>=
+library(ipred)
+set.seed(1)
+data(GBSG2)
+dataset=GBSG2
+y.new=dataset$time
+y.new=ifelse(dataset$time>2000,2000,dataset$time)
+y=log(y.new)
+cens=dataset$cens
+cens[which(dataset$time>2000)]=1
+x=dataset[,c(1:8)]
+brier.vec=median(y)
+
+set.seed(1)
+model.IPCW=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minbuck=20,loss.function="IPCW",wt.method="KM"))
+
+set.seed(1)
+model.Brier=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minbuck=20,loss.function="Brier",brier.vec=brier.vec))
+
+
+model.IPCW
+
+model.Brier
+@
+
+The models created using the IPCW and Brier methods both have two partitions involving the variables progesterone receptor and number of positive nodes. 
+These models show the ability of partDSA to elucidate complex relationships among covariates and survival time.
+
+
+
+
+
 
 \bibliography{refs}
 
