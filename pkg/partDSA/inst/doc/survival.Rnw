@@ -8,6 +8,7 @@
 %% packages
 \usepackage{graphicx}
 \usepackage{subfigure}
+%% need no \usepackage{Sweave}
 
 %% commands
 \def\thanks#1{%\footnotemark
