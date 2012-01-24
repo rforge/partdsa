@@ -27,9 +27,10 @@
 \title{A Partitioning Deletion/Substitution/Addition Algorithm for Creating Survival Risk Groups}
 \Shorttitle{\pkg{partDSA}}
 
-\author{Karen Lostritto \\Yale University \And Annette M. Molinaro \\Yale University
-	\And Steve Weston}
-\Plainauthor{Karen Lostritto, Annette M. Molinaro, Steve Weston}
+\author{Karen Lostritto \\Yale University
+        \And Annette M. Molinaro \\University of California, San Francisco
+	\And Stephen Weston \\Yale University}
+\Plainauthor{Karen Lostritto, Annette M. Molinaro, Stephen Weston}
 \Keywords{recursive partitioning,Survival}
 
 \Abstract{ 
