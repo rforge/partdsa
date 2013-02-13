@@ -1,24 +1,29 @@
+# Create an environment in the package that will hold
+# data sent to the workers by the "worker.init" function
+# and used by the "worker" function.
+.Cache <- new.env(parent=emptyenv())
+
 worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
                    loss.function, control=DSA.control(),
                    # XXX default values?
                    wt.method, brier.vec, cox.vec, IBS.wt) {
-  x <- data.frame(get('G.x')[get('G.grp.delt') != cv.ind,])
-  y <- if (inherits(get('G.y'), "Surv"))
-    get('G.y')[get('G.grp.delt') != cv.ind,]
+  x <- data.frame(.Cache$G.x[.Cache$G.grp.delt != cv.ind,])
+  y <- if (inherits(.Cache$G.y, "Surv"))
+    .Cache$G.y[.Cache$G.grp.delt != cv.ind,]
   else
-    get('G.y')[get('G.grp.delt') != cv.ind]
-  wt <- get('G.wt')[get('G.grp.delt') != cv.ind]
+    .Cache$G.y[.Cache$G.grp.delt != cv.ind]
+  wt <- .Cache$G.wt[.Cache$G.grp.delt != cv.ind]
 
-  x.test <- data.frame(get('G.x')[get('G.grp.delt') == cv.ind,])
-  y.test <- if (inherits(get('G.y'), "Surv"))
-    get('G.y')[get('G.grp.delt') == cv.ind,]
+  x.test <- data.frame(.Cache$G.x[.Cache$G.grp.delt == cv.ind,])
+  y.test <- if (inherits(.Cache$G.y, "Surv"))
+    .Cache$G.y[.Cache$G.grp.delt == cv.ind,]
   else
-    get('G.y')[get('G.grp.delt') == cv.ind]
-  wt.test <- get('G.wt')[get('G.grp.delt') == cv.ind]
+    .Cache$G.y[.Cache$G.grp.delt == cv.ind]
+  wt.test <- .Cache$G.wt[.Cache$G.grp.delt == cv.ind]
 
   ## Create weights for IPCW using assign.surv.wts function and the
   ## chosen wt.method
-  if (inherits(get('G.y'),"Surv") & loss.function == "IPCW") {
+  if (inherits(.Cache$G.y, "Surv") & loss.function == "IPCW") {
     wt <- assign.surv.wts(x, y=Surv(y[,1], y[,2]),
         opts=list(loss.fx=loss.function, wt.method=wt.method),cox.vec=cox.vec)
     wt.test <- assign.surv.wts(x=x.test, y=Surv(y.test[,1],y.test[,2]),
@@ -80,10 +85,10 @@ worker.init <- function(lib.loc, a, b, c, d) {
   ## XXX Why was this commented out?
   library(partDSA, lib.loc=lib.loc)
   library(survival)
-  assign('G.x', a, globalenv())
-  assign('G.grp.delt', b, globalenv())
-  assign('G.wt', c, globalenv())
-  assign('G.y', d, globalenv())
+  assign('G.x', a, pos=.Cache)
+  assign('G.grp.delt', b, pos=.Cache)
+  assign('G.wt', c, pos=.Cache)
+  assign('G.y', d, pos=.Cache)
   invisible(NULL)
 }
 
