@@ -179,20 +179,19 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       y.test <- ConvertFactorsToNumeric(y.test.original)
     }
 
-    if (missing(sleigh) || ! require('nws',quietly=TRUE)) {
+    if (missing(sleigh) || ! require('parallel',quietly=TRUE)) {
       worker.init(lib.loc=NULL, x, -1, wt, y)
       tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck,
                              cut.off.growth, MPD, missing, loss.function,
                              x, y, wt, x.test, y.test, wt.test, control,
                              wt.method, brier.vec, cox.vec, IBS.wt)
     } else {
-      r <- eachWorker(sleigh, worker.init, lib.loc=NULL, x, -1, wt, y)
-      lapply(r, function(e) if (inherits(e,'error')) stop(e))
-      tree.results <- eachElem(sleigh,worker.leafy,1:control$leafy.num.trees,
-                               list(minbuck, cut.off.growth, MPD, missing,
-                                    loss.function, x, y, wt, x.test, y.test,
-                                    wt.test, control, wt.method, brier.vec, cox.vec, IBS.wt))
-      lapply(tree.results,function(e) if(inherits(e,'error')) stop(e))
+      r <- clusterCall(sleigh, worker.init, lib.loc=NULL, x, -1, wt, y)
+      tree.results <- clusterApplyLB(sleigh,1:control$leafy.num.trees,worker.leafy,
+                               minbuck, cut.off.growth, MPD, missing,
+                               loss.function, x, y, wt, x.test, y.test,
+                               wt.test, control, wt.method, brier.vec, cox.vec,
+                               IBS.wt)
     }
 
     predicted.values.by.tree <- lapply(tree.results,'[[',1)
@@ -288,20 +287,17 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         grp.delt <- sample(rep(1:vfold, length=nrow(x)), nrow(x), replace=F)
       }
 
-      if (missing(sleigh) || ! require('nws', quietly=TRUE)) {
+      if (missing(sleigh) || ! require('parallel', quietly=TRUE)) {
         worker.init(lib.loc=NULL, x, grp.delt, wt, y)
         test.risk.DSA <- lapply(1:vfold, worker, minbuck, cut.off.growth,
                                 MPD, missing, loss.function, control,
                                 wt.method, brier.vec, cox.vec, IBS.wt)
       } else {
-        r <- eachWorker(sleigh, worker.init, lib.loc=NULL, x, grp.delt, wt, y)
-        lapply(r, function(e) if (inherits(e, 'error')) stop(e))
-        test.risk.DSA <- eachElem(sleigh, worker, 1:vfold,
-                                  list(minbuck, cut.off.growth, MPD,
-                                       missing, loss.function, control,
-                                       wt.method, brier.vec, cox.vec, IBS.wt))
-        # test if we got any errors
-        lapply(test.risk.DSA, function(e) if (inherits(e, 'error')) stop(e))
+        r <- clusterCall(sleigh, worker.init, lib.loc=NULL, x, grp.delt, wt, y)
+        test.risk.DSA <- clusterApplyLB(sleigh, 1:vfold, worker,
+                                        minbuck, cut.off.growth,
+                                        MPD, missing, loss.function, control,
+                                        wt.method, brier.vec, cox.vec, IBS.wt)
       }
 
       ## DSA - after get the cv-validation results back - find

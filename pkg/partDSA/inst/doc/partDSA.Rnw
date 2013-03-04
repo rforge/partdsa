@@ -1,7 +1,6 @@
 \documentclass[nojss]{jss}
 
 %\VignetteIndexEntry{partDSA: Deletion/Substitution/Addition Algorithm for Partitioning the Covariate Space in Prediction}
-%\VignetteDepends{nws}
 %\VignetteKeywords{recursive partitioning}
 %\VignettePackage{partDSA}
 
@@ -182,17 +181,18 @@ training and test sets, respectively.
 \subsection{Parallel Computing}
 Cross-validation is employed in order to select the best model in
 \pkg{partDSA}. To address this added computational burden an optional
-sleigh object can be specified which allows the cross-validation to be
-performed in parallel using the \pkg{nws} package.  By default the cross-validation is run
+cluster object can be specified via the sleigh argument which allows
+the cross-validation to be
+performed in parallel using the \pkg{parallel} package.  By default the cross-validation is run
 sequentially. 
 
 An example of running \pkg{partDSA} in parallel with two workers is:
 
 \begin{verbatim}
-s <- sleigh(verbose=TRUE, workerCount=2)
-stat <- status(s, TRUE, 60)
-cat(sprintf('Running a sleigh with %d workers\n', stat$numWorkers))
-model3<-partDSA(x=data.frame(x1,x2),y=y.out,sleigh=s)
+library(parallel)
+cl <- makeCluster(2, type='PSOCK')
+cat(sprintf('Running a PSOCK cluster with %d workers\n', length(cl)))
+model3<-partDSA(x=data.frame(x1,x2),y=y.out,sleigh=cl)
 \end{verbatim}
 
 

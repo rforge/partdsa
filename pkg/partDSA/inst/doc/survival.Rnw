@@ -1,7 +1,6 @@
 \documentclass[nojss]{jss}
 
 %\VignetteIndexEntry{partDSA: Deletion/Substitution/Addition Algorithm for Partitioning the Covariate Space in Prediction}
-%\VignetteDepends{nws}
 %\VignetteKeywords{recursive partitioning}
 %\VignettePackage{partDSA}
 
