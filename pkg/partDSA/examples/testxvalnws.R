@@ -2,10 +2,6 @@ library(partDSA)
 library(mlbench)
 source('FriedmanData.R')
 
-s <- sleigh(workerCount=2,verbose=TRUE)
-stat <- status(s, TRUE, 60)
-cat(sprintf('Running a sleigh with %d workers\n', stat$numWorkers))
-
 seed <- 6442
 set.seed(seed)
 # loglevel(debug)
@@ -34,7 +30,7 @@ control <- DSA.control(minbuck=20, cut.off.growth=7)
 time <- system.time(
     results <- partDSA(x=x, y=y, wt=wt,
                        x.test=x.test, y.test=y.test, wt.test=wt.test,
-                       control=control, sleigh=s))
+                       control=control, sleigh=4))
 print(results)
 cat('New elapsed time: ')
 print(time[[3]])
