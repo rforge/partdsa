@@ -95,8 +95,8 @@ model.Brier <- partDSA(x=x, y=y, x.test=x.test, y.test=y.test,
 print(model.Brier)
 
 #### Example 3: Data Analysis ###
-library(ipred)
-data(GBSG2)
+
+data("GBSG2", package = "TH.data")
 dataset <- GBSG2
 outcome <- Surv(dataset$time, dataset$cens)
 vars <- dataset[,c(1:8)]
