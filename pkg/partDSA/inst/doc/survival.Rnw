@@ -358,12 +358,12 @@ model2.Brier
 \section{Data Example}
 
 We now demonstrate the application of both partDSA with the IPCW weighting scheme and the Brier weighting scheme on the German Breast 
-Cancer Study Data.  The goal in this dataset is to predict the survival time from the covariates: hormone therapy, age, menopausal status,
+Cancer Study Data (from TH.data package in R).  The goal in this dataset is to predict the survival time from the covariates: hormone therapy, age, menopausal status,
 tumor size, tumor grade, positive nodes, progesterone receptor, and estrogen receptor.
 
 
 <<echo=T>>=
-library(ipred)
+data("GBSG2", package = "TH.data")
 set.seed(1)
 data(GBSG2)
 dataset=GBSG2
