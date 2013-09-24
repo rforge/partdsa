@@ -439,7 +439,7 @@ statement ordering.
 \subsection{Categorical outcome}
 The German Breast Cancer Study Group (GBSG2) datai is a prospective
 controlled clinical trial on the treatment of node positive breast
-cancer patients \citep{GBSG}. The data (available within the ipred
+cancer patients \citep{GBSG}. The data (available within the TH.data
 package) contains 686 women with seven prognostic factors measured. 
 For this analysis we will predict recurrence by using the censoring status (0 = uncensored, 1
 = censored). 
@@ -447,7 +447,7 @@ For this analysis we will predict recurrence by using the censoring status (0 = 
 
 
 <<echo=T>>=
-data("GBSG2", package = "ipred")
+data("GBSG2", package = "TH.data")
 mdl1<-partDSA(x=data.frame(GBSG2[,c(1:8)]),y=as.factor(GBSG2$cens),control=DSA.control(cut.off.growth=5,loss.function="gini",minbuck=10))
 print(mdl1)
 @ 
