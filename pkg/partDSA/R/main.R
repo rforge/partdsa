@@ -84,7 +84,7 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
 worker.init <- function(lib.loc, a, b, c, d) {
   ## XXX Why was this commented out?
   library(partDSA, lib.loc=lib.loc)
-  library(survival)
+  #library(survival)  --- listed under dependencies for partDSA
   assign('G.x', a, pos=.Cache)
   assign('G.grp.delt', b, pos=.Cache)
   assign('G.wt', c, pos=.Cache)
