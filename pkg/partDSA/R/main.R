@@ -37,13 +37,13 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
   if (loss.function == "Brier") {
     wt <- array(NA, c(nrow(x), length(brier.vec)))
     for (r in seq(along=brier.vec)) {
-      wt[,r] <- assign.surv.wts(x, y=Surv(y[,1], y[,2]),
+      wt[,r] <- assign.surv.wts(x=x, y=Surv(y[,1], y[,2]),
           opts=list(loss.fx=loss.function, wt.method=wt.method),
           T.star=brier.vec[r], cox.vec=cox.vec)
     }
     wt.test <- array(NA, c(nrow(x.test), length(brier.vec)))
     for (r in seq(along=brier.vec)) {
-      wt.test[,r] <- assign.surv.wts(x.test, y=Surv(y.test[,1], y.test[,2]),
+      wt.test[,r] <- assign.surv.wts(x=x.test, y=Surv(y.test[,1], y.test[,2]),
           opts=list(loss.fx=loss.function,wt.method=wt.method),
           T.star=brier.vec[r], cox.vec=cox.vec)
     }
@@ -74,7 +74,7 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
      ## on the cutpoint and then use that to calculate the risk.
      ## this function (in new functions) adds up the risk over all
      ## the cutpoint values
-     cv.risk <- calculate.brier.risk(model=ty, x, y, wt, x.test, y.test, wt.test,
+     cv.risk <- calculate.brier.risk(model=ty, x=x, y=y, wt=wt, x.test=x.test, y.test=y.test, wt.test=wt.test,
                                opts=list(loss.fx="Brier", brier.vec=brier.vec, IBS.wt=IBS.wt))
   }
 
@@ -164,6 +164,8 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
               "Set wt.method='KM' to proceed."))
 
 
+  #cox.vec and IBS.wt not used in worker.leafy
+  
   # handle the default value for wt.test specially
   if (missing(wt.test)) {
     wt.test <- if (missing(x.test)) wt else rep(1, nrow(x.test))
@@ -183,10 +185,10 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         (is.numeric(sleigh) && sleigh <= 1)) {
       # Use lapply
       worker.init(lib.loc=NULL, x, -1, wt, y)
-      tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck,
-                             cut.off.growth, MPD, missing, loss.function,
-                             x, y, wt, x.test, y.test, wt.test, control,
-                             wt.method, brier.vec, cox.vec, IBS.wt)
+      tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck=minbuck,
+                             cut.off.growth=cut.off.growth, MPD=MPD, missing=missing, loss.function=loss.function,
+                             x.in=x, y.in=y, wt.in=wt, x.test.in=x.test, y.test.in=y.test, wt.test.in=wt.test,
+                             control=control,wt.method=wt.method, brier.vec=brier.vec, cox.vec, IBS.wt)
     } else {
       if (! is.numeric(sleigh) || .Platform$OS.type == 'windows') {
         # Use clusterCall and clusterApplyLB
@@ -195,20 +197,20 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         else
           sleigh
         clusterCall(cl, worker.init, lib.loc=NULL, x, -1, wt, y)
-        tree.results <- clusterApplyLB(cl,1:control$leafy.num.trees,worker.leafy,
-                                 minbuck, cut.off.growth, MPD, missing,
-                                 loss.function, x, y, wt, x.test, y.test,
-                                 wt.test, control, wt.method, brier.vec, cox.vec,
-                                 IBS.wt)
+        tree.results <- clusterApplyLB(cl,1:control$leafy.num.trees,worker.leafy,minbuck=minbuck,
+                                       cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
+                                       loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
+                                       y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
+                                       brier.vec=brier.vec, cox.vec, IBS.wt)
         if (is.numeric(sleigh))
           stopCluster(cl)
       } else {
         # Use mclapply
         worker.init(lib.loc=NULL, x, -1, wt, y)
-        tree.results <- mclapply(1:control$leafy.num.trees, worker.leafy, minbuck,
-                                 cut.off.growth, MPD, missing, loss.function,
-                                 x, y, wt, x.test, y.test, wt.test, control,
-                                 wt.method, brier.vec, cox.vec, IBS.wt,
+        tree.results <- mclapply(1:control$leafy.num.trees, worker.leafy, minbuck=minbuck,
+                                 cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
+                                 loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
+                                 y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
                                  mc.cores=sleigh)
       }
     }
@@ -228,18 +230,18 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     var.penetrance.list <- as.list(variable.penetrance.on.average)
 
     if (is.factor(y)) { #this is the categorical case
-      categorical.results <- categorical.predictions(predicted.values.by.tree,
-                                                     predicted.test.set.values.by.tree,
-                                                     y, y.test, x, x.test,
-                                                     y.original, y.test.original)
+      categorical.results <- categorical.predictions(predicted.values.by.tree=predicted.values.by.tree,
+                                                     predicted.test.set.values.by.treet=predicted.test.set.values.by.tree,
+                                                     y=y, y.test=y.test, x=x, x.test=x.test,
+                                                     y.original=y.original, y.test.original=y.test.original)
     } else if (inherits(y, "Surv")) {
       # This will be for survival
       stop('not implemented yet')
     } else {
       # must be the numeric case
-      numerical.results <- numerical.predictions(predicted.values.by.tree,
-                                                 predicted.test.set.values.by.tree,
-                                                 y, y.test, x, x.test, wt, wt.test)
+      numerical.results <- numerical.predictions(predicted.values.by.tree=predicted.values.by.tree,
+                                                 predicted.test.set.values.by.tree=predicted.test.set.values.by.tree,
+                                                 y=y, y.test=y.test, x=x, x.test=x.test, wt=wt, wt.test=wt.test)
     }
 
     if (is.null(names(x))) {
@@ -310,9 +312,9 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
           (is.numeric(sleigh) && sleigh <= 1)) {
         # Use lapply
         worker.init(lib.loc=NULL, x, grp.delt, wt, y)
-        test.risk.DSA <- lapply(1:vfold, worker, minbuck, cut.off.growth,
-                                MPD, missing, loss.function, control,
-                                wt.method, brier.vec, cox.vec, IBS.wt)
+        test.risk.DSA <- lapply(1:vfold, worker, minbuck=minbuck, cut.off.growth=cut.off.growth,
+                                MPD=MPD, missing=missing, loss.function=loss.function, control=control,
+                                wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
       } else {
         if (! is.numeric(sleigh) || .Platform$OS.type == 'windows') {
           # Use clusterCall and clusterApplyLB
@@ -321,18 +323,17 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
           else
             sleigh
           clusterCall(cl, worker.init, lib.loc=NULL, x, grp.delt, wt, y)
-          test.risk.DSA <- clusterApplyLB(cl, 1:vfold, worker,
-                                          minbuck, cut.off.growth,
-                                          MPD, missing, loss.function, control,
-                                          wt.method, brier.vec, cox.vec, IBS.wt)
+          test.risk.DSA <- clusterApplyLB(cl, 1:vfold, worker,minbuck=minbuck, cut.off.growth=cut.off.growth,
+                                          MPD=MPD, missing=missing, loss.function=loss.function, control=control,
+                                          wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
           if (is.numeric(sleigh))
             stopCluster(cl)
         } else {
           # Use mclapply
           worker.init(lib.loc=NULL, x, grp.delt, wt, y)
-          test.risk.DSA <- mclapply(1:vfold, worker, minbuck, cut.off.growth,
-                                    MPD, missing, loss.function, control,
-                                    wt.method, brier.vec, cox.vec, IBS.wt,
+          test.risk.DSA <- mclapply(1:vfold, worker,minbuck=minbuck, cut.off.growth=cut.off.growth,
+                                    MPD=MPD, missing=missing, loss.function=loss.function, control=control,
+                                    wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt,
                                     mc.cores=sleigh)
         }
       }
@@ -399,8 +400,8 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     } else if (test2.ty$options$outcome.class=="survival" && test2.ty$options$loss.fx == "Brier") {
       # separate function to calculate risk for brier because it needs
       # to be summed over all the cutpoints in brier.vec
-      test.set.risk.DSA <- calculate.brier.risk(model=test2.ty, x, y, wt,
-              x.test, y.test, wt.test,
+      test.set.risk.DSA <- calculate.brier.risk(model=test2.ty, x=x, y=y, wt=wt,
+              x.test=x.test, y.test=y.test, wt.test=wt.test,
               opts=list(loss.fx="Brier", brier.vec=brier.vec, wt.method=wt.method, cox.vec=cox.vec, IBS.wt=IBS.wt))
     }
 
