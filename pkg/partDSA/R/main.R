@@ -231,7 +231,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
 
     if (is.factor(y)) { #this is the categorical case
       categorical.results <- categorical.predictions(predicted.values.by.tree=predicted.values.by.tree,
-                                                     predicted.test.set.values.by.treet=predicted.test.set.values.by.tree,
+                                                     predicted.test.set.values.by.tree=predicted.test.set.values.by.tree,
                                                      y=y, y.test=y.test, x=x, x.test=x.test,
                                                      y.original=y.original, y.test.original=y.test.original)
     } else if (inherits(y, "Surv")) {

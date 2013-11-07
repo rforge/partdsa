@@ -2,7 +2,7 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
                         missing="impute.at.split", loss.function="default",
                         wt.method="KM", brier.vec=NULL,
                         leafy=0, leafy.random.num.variables.per.split=4,
-                        leafy.num.trees=50, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL) {
+                        leafy.num.trees=50, leafy.subsample=0.632, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL) {
   if (leafy == 1 && (!is.wholenumber(leafy.num.trees)))
     stop('The number of trees must be a whole number')
 
@@ -15,6 +15,9 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
   if (leafy == 1 && (leafy.random.num.variables.per.split <= 0))
     stop('The number of random variables per split must be greater than 0')
 
+  if(!is.numeric(leafy.subsample) || leafy.subsample<0 || leafy.subsample>1)
+    stop('leafy.subsample must be numeric and between 0 and 1')
+  
   if (!is.numeric(vfold) || length(vfold) > 1 || vfold < 1)
     stop('vfold must be a numeric value >= 1')
 
@@ -54,5 +57,5 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
        MPD=MPD, missing=missing, loss.function=loss.function,
        wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt, leafy=leafy, 
        leafy.random.num.variables.per.split=leafy.random.num.variables.per.split,
-       leafy.num.trees=leafy.num.trees, save.input=save.input)
+       leafy.num.trees=leafy.num.trees, leafy.subsample=leafy.subsample,save.input=save.input)
 }

@@ -14,3 +14,4 @@ Description: partDSA is a novel tool for generating a piecewise
 Depends: R (>= 2.5), survival
 Suggests: parallel, MASS, TH.data, VGAM
 License: GPL-2
+Packaged: 2013-11-06 23:37:38 UTC; olshena

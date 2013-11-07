@@ -6,9 +6,15 @@ worker.leafy <- function(tree.num, minbuck, cut.off.growth, MPD, missing,
                    	
   # Set up bootstrap sample
   
+  #Now subsample unless leafy.subsample=0
+
+  if(control$leafy.subsample>0){
+    number.to.sample <- round(control$leafy.subsample*dim(x.in)[1])
+    obs.in.bag <- sample(1:(dim(x.in)[1]),number.to.sample,replace=FALSE)
+  }else{
+    obs.in.bag <- sample(1:(dim(x.in)[1]),dim(x.in)[1],replace=TRUE)
+  }
   
-  obs.in.bag <- sample(1:(dim(x.in)[1]),dim(x.in)[1],T)
-    
   x<-data.frame(x.in[obs.in.bag,])
   y<-y.in[obs.in.bag]
   wt <- wt.in[obs.in.bag]
