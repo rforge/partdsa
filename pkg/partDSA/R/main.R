@@ -164,7 +164,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
               "Set wt.method='KM' to proceed."))
 
 
-  #cox.vec and IBS.wt not used in worker.leafy
+  #cox.vec and IBS.wt not used in worker.leafy until fixed for version 0.9.1
   
   # handle the default value for wt.test specially
   if (missing(wt.test)) {
@@ -186,9 +186,10 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       # Use lapply
       worker.init(lib.loc=NULL, x, -1, wt, y)
       tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck=minbuck,
-                             cut.off.growth=cut.off.growth, MPD=MPD, missing=missing, loss.function=loss.function,
-                             x.in=x, y.in=y, wt.in=wt, x.test.in=x.test, y.test.in=y.test, wt.test.in=wt.test,
-                             control=control,wt.method=wt.method, brier.vec=brier.vec, cox.vec, IBS.wt)
+                             cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
+                             loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
+                             y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
+                             brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
     } else {
       if (! is.numeric(sleigh) || .Platform$OS.type == 'windows') {
         # Use clusterCall and clusterApplyLB
