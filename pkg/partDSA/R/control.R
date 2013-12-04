@@ -2,7 +2,7 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
                         missing="impute.at.split", loss.function="default",
                         wt.method="KM", brier.vec=NULL,
                         leafy=0, leafy.random.num.variables.per.split=4,
-                        leafy.num.trees=50, leafy.subsample=0.632, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL) {
+                        leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL) {
   if (leafy == 1 && (!is.wholenumber(leafy.num.trees)))
     stop('The number of trees must be a whole number')
 

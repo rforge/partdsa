@@ -21,7 +21,7 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
             missing="impute.at.split", loss.function="default",
             wt.method="KM", brier.vec=NULL,
             leafy=0, leafy.random.num.variables.per.split=4,
-            leafy.num.trees=50, leafy.subsample=0.632, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL)
+            leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -80,9 +80,9 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 \item{leafy.random.num.variables.per.split}{Not documented yet.}
 \item{leafy.num.trees}{Not documented yet.}
 \item{leafy.subsample}{Numeric value between 0 and 1.  The value 0 is
-  used for bootstrap sampling (sampling without replacement).  If the
+  used for bootstrap sampling (sampling witht replacement).  If the
   value is greater than 0, it corresponds to the proportion of samples
-  used to build the model.  The default is 0.632.}
+  used to build the model, such as 0.632.  The default is 0.}
 \item{save.input}{Indicates if \code{x} and \code{y} should be saved
  in the object returned by partDSA.  If \code{FALSE}, \code{x} and \code{y}
  are set to \code{NULL}.  The default value is \code{FALSE}.}

@@ -1,7 +1,7 @@
 Package: partDSA
 Type: Package
 Title: Partitioning using deletion, substitution, and addition moves
-Version: 0.9.1
+Version: 0.9.2
 Author: Annette Molinaro <annette.molinaro@ucsf.edu>,
         Karen Lostritto <karen.lostritto@yale.edu>, 
         Gregory Ryslik <gregory.ryslik@yale.edu>,
