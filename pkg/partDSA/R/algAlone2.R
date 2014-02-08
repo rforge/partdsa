@@ -246,7 +246,12 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
       if (length(x) != 1) NA_integer_ else x
     })
     f <- factor(i, levels=paste(seq(length=ncol(test))))
-    split(y, f, drop=FALSE)  # This works on survival objects, also
+
+    # The split function doesn't work on Surv objects as of R 3.0,
+    # so we now perform the split on "y" in two steps. This should
+    # work on both numeric vectors and Surv objects.
+    ind <- split(seq_along(f), f, drop=FALSE)
+    lapply(ind, function(k) y[k])
   }
 
   # This used to give an error for survival case, but is hopefully fixed now
