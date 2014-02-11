@@ -229,12 +229,13 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     i <- unlist(lapply(seq(length=nrow(test)), function(irow) which(test[irow,] != 0)))
     tabulate(i, nbins=ncol(test))
   }
+  
   tablist <- lapply(keep.bas.fx, tabfun)
 
+  
   ## Get the vector of outcomes for each of the partitions
   datafun <- function(BFs) {
     test <- assign.obs.to.bf(dat2=x, n=n, p=p, BFs=BFs)
-
     stopifnot(n == nrow(test))
     if (outcome.class == "survival")
       stopifnot(n == length(y) %/% 2)
@@ -254,14 +255,14 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     lapply(ind, function(k) y[k])
   }
 
-  # This used to give an error for survival case, but is hopefully fixed now
   datalist <- tryCatch({
-    lapply(keep.bas.fx, datafun)
-  },
+     lapply(keep.bas.fx, datafun)
+  	  },
   error=function(e) {
     print(e)
     NULL
   })
+
 
   object <- list(cut.off.growth=cut.off.growth,
                  minbuck=minbuck,
