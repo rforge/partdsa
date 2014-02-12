@@ -1,13 +1,13 @@
 \documentclass[nojss]{jss}
 
-%\VignetteIndexEntry{partDSA: Deletion/Substitution/Addition Algorithm for Partitioning the Covariate Space in Prediction}
-%\VignetteKeywords{recursive partitioning}
+%\VignetteIndexEntry{A Partitioning Deletion/Substitution/Addition Algorithm for Creating Survival Risk Groups}
+%\VignetteKeywords{Recursive partitioning, Survival}
 %\VignettePackage{partDSA}
 
 %% packages
 \usepackage{graphicx}
 \usepackage{subfigure}
-%% need no \usepackage{Sweave}
+%\usepackage{Sweave}
 
 %% commands
 \def\thanks#1{%\footnotemark
@@ -30,7 +30,7 @@
         \And Annette M. Molinaro \\University of California, San Francisco
 	\And Stephen Weston \\Yale University}
 \Plainauthor{Karen Lostritto, Annette M. Molinaro, Stephen Weston}
-\Keywords{recursive partitioning,Survival}
+\Keywords{Recursive partitioning, Survival}
 
 \Abstract{ 
 
