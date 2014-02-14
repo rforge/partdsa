@@ -50,7 +50,6 @@
 
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
 
 \thanks{Copyright \copyright 2010.}
 
