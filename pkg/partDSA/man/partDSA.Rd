@@ -15,13 +15,15 @@ more aggressive but also more flexible. As such, \emph{partDSA} provides
 the user an additional tool for their statistical toolbox.
 }
 \usage{
+	
 partDSA(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         control=DSA.control(), sleigh)
 DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
             missing="impute.at.split", loss.function="default",
             wt.method="KM", brier.vec=NULL,
             leafy=0, leafy.random.num.variables.per.split=4,
-            leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, cox.vec=NULL, IBS.wt=NULL)
+            leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, 
+            cox.vec=NULL, IBS.wt=NULL)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
