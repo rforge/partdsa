@@ -1,6 +1,7 @@
 export(partDSA, DSA.control, loglevel, trim, trim.dsa, trim.partDSA,
        predict.dsa, print.dsa, print.partDSA, dumpDSA,
        showDSA, showDSA.dsa, showDSA.character)
+import(survival)
 S3method(trim, dsa)
 S3method(trim, partDSA)
 S3method(predict, dsa)
