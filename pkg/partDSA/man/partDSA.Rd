@@ -19,11 +19,11 @@ the user an additional tool for their statistical toolbox.
 partDSA(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         control=DSA.control(), sleigh)
 DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
-            missing="impute.at.split", loss.function="default",
-            wt.method="KM", brier.vec=NULL,
-            leafy=0, leafy.random.num.variables.per.split=4,
-            leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, 
-            cox.vec=NULL, IBS.wt=NULL)
+                        missing="impute.at.split", loss.function="default",
+                        wt.method="KM", brier.vec=NULL,
+                        leafy=0, leafy.random.num.variables.per.split=4,
+                        leafy.num.trees=50, leafy.subsample=0, save.input=FALSE, 
+                        boost=0, boost.num.trees=50, cox.vec=NULL, IBS.wt=NULL)
 }
 \arguments{
 \item{x}{The matrix or data frame of predictor variables for the training set,
@@ -88,6 +88,8 @@ DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
 \item{save.input}{Indicates if \code{x} and \code{y} should be saved
  in the object returned by partDSA.  If \code{FALSE}, \code{x} and \code{y}
  are set to \code{NULL}.  The default value is \code{FALSE}.}
+\item{boost}{Not documented yet.}
+\item{boost.num.trees}{Not documented yet.}
 }
 \details{
 \code{missing} set to "no" indicates that there is no missing data and

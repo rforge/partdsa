@@ -110,7 +110,10 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
   cox.vec <- control$cox.vec
   IBS.wt <- control$IBS.wt
   
-  
+  if(control$boost == 1 && is.factor(y)){
+     stop(paste("Y can only be numeric."))
+  }
+
   if( inherits(y, "Surv") && loss.function == "default" ){
       loss.function <- "IPCW"
   }
@@ -283,9 +286,48 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
                              "Variable.Penetrance", "Prediction.Rules")
     }
     class(results)<-('LeafyDSA')
-  } else {
+  } else if(control$boost == 1 ){  #Start Boosting
+  	
+  		boost.num.trees<-control$boost.num.trees
+  		boost.out <- matrix(0,nrow=nrow(x),ncol=boost.num.trees)
+  		boost.models<-vector("list",boost.num.trees)
+  		resids.sum <- NULL
+  		resids<-y
+  		for(i in 1:boost.num.trees){
+  			boost.models[[i]]<-rss.dsa(x=x, y=resids, wt=wt, minbuck=minbuck,
+                        cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
+                        loss.function=loss.function, control=control,
+                        wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
+         boost.models[[i]]$pred.test.set.DSA <- predict(boost.models[[i]], x)
+			boost.out[,i]<-boost.models[[i]]$pred.test.set.DSA[,cut.off.growth]
+			resids <- (resids - boost.out[,i])
+			resids.sum[i] <- sum(resids^2)
+  		}
+  		### Predicted Values
+  		y.hat.train <- y - resids
+  		if(!is.null(x.test)){  # For future prediction
+  			y.hat.test<-rep(0,nrow=x.test)
+  			test.set.error <- NULL
+  			for(i in 1:boost.num.trees){
+  				 y.hat.test <- y.hat.test +  predict(boost.models[[i]], x.test)[,cut.off.growth]
+  				 test.set.error[i]<-sum((y.test - y.hat.test)^2)
+  			}
+  		}
+  	   results <- list(resids.sum,
+                      boost.models,
+                      y.hat.train,
+                      y.hat.test,
+                      test.set.error,
+                      test.set.error[boost.num.trees])
+
+      names(results) <- list("Training.Set.Errors", "Training.Set.Models", 
+      								 "Predicted.Train.Set.Values", 
+                             "Predicted.Test.Set.Values", "Test.Set.Errors", "Final.Test.Set.Error")
+      class(results)<-('BoostDSA')
+
+    } else {   # Begin partDSA
     # Only do cross validation if vfold > 1
-    if (vfold > 1) {
+    if (vfold > 1) {  #partDSA with cross-validation	
       ## Set up cross validation. For the case of a categorical outcome variable,
       ## make sure all folds have the same proportions of levels.
       ## For survival, to create CV groups, use the same code as for a factor
