@@ -190,8 +190,8 @@ wt=rep(1,tr.n)
 wt.test=rep(1,ts.n)
 detach(package:VGAM)
 
-model.KM.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="IPCW",wt.method="KM",missing="no",cut.off.growth=4))
-model.Cox.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="IPCW",wt.method="Cox",missing="no",cut.off.growth=4))
+model.KM.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minsplit=40,minbuck=15, loss.function="IPCW",wt.method="KM",missing="no",cut.off.growth=4))
+model.Cox.IPCW=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minsplit=40, minbuck=15, loss.function="IPCW",wt.method="Cox",missing="no",cut.off.growth=4))
  
 
 
@@ -332,8 +332,8 @@ wt.test=rep(1,ts.n)
 detach(package:VGAM)
 
 
-model1.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=-3.9237))
-model2.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=quantile(y,c(.25,.5,.75))))
+model1.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minsplit=40, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=-3.9237))
+model2.Brier=partDSA(x=x,y=Surv(y,cens),x.test=x.test,y.test=Surv(y.test,cens.test),control=DSA.control(vfold=5, MPD=.05, minsplit=40, minbuck=15, loss.function="Brier",missing="no",cut.off.growth=4,brier.vec=quantile(y,c(.25,.5,.75))))
  
 @
 
@@ -376,10 +376,10 @@ x=dataset[,c(1:8)]
 brier.vec=median(y)
 
 set.seed(1)
-model.IPCW=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minbuck=20,loss.function="IPCW",wt.method="KM"))
+model.IPCW=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minsplit=50,minbuck=20,loss.function="IPCW",wt.method="KM"))
 
 set.seed(1)
-model.Brier=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minbuck=20,loss.function="Brier",brier.vec=brier.vec))
+model.Brier=partDSA(x=x,y=Surv(y,cens),control=DSA.control(vfold=5, cut.off.growth=5,MPD=.01,minsplit=50,minbuck=20,loss.function="Brier",brier.vec=brier.vec))
 
 
 model.IPCW

@@ -204,7 +204,7 @@ the user can specify numerous parameters via the control object. The
 control object is created by calling the DSA.control function. 
  
 \begin{verbatim}
-DSA.control(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1, 
+DSA.control(vfold=10, minsplit=20, minbuck=round(minsplit/3), cut.off.growth=10, MPD=0.1, 
             missing="default", loss.function="default")
 \end{verbatim}
 
@@ -238,15 +238,25 @@ cross-validation, we can specify:
 \end{verbatim}
 
 
+\subsection{minsplit}
+Minsplit is the minimum number of observations necessary to split one partition into two partitions. 
+By default minsplit is set equal to 20,  to specify a minimum of 15 observations, we can write:
+
+\begin{verbatim}
+> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(minsplit=15))
+\end{verbatim}
+
 \subsection{minbuck}
 Minbuck is the minimum number of observations that can be in a
 partition. In order to split a partition into two (either via the Addition
-or Substitution steps) there must be at least $2*minbuck$
-observations. By default minbuck is set equal to 6,  to specify a minimum of 15 observations in any
-partition, we can write:
+or Substitution steps), there must be at least $2*minbuck$
+observations. By default minbuck is set equal to $round(minsplit/3) = 7$ as 
+$minsplit = 20$ by default. To specify a minimum of 15 observations in any
+terminal partition, we should also increase minsplit from the default of 20, 
+and we can write:
 
 \begin{verbatim}
-> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(minbuck=15))
+> partDSA(x=data.frame(x1,x2),y=y.out,control=DSA.control(minsplit=40, minbuck=15))
 \end{verbatim}
 
 \subsection{cut-off-growth}
@@ -448,7 +458,7 @@ For this analysis we will predict recurrence by using the censoring status (0 = 
 
 <<echo=T>>=
 data("GBSG2", package = "TH.data")
-mdl1<-partDSA(x=data.frame(GBSG2[,c(1:8)]),y=as.factor(GBSG2$cens),control=DSA.control(cut.off.growth=5,loss.function="gini",minbuck=10))
+mdl1<-partDSA(x=data.frame(GBSG2[,c(1:8)]),y=as.factor(GBSG2$cens),control=DSA.control(cut.off.growth=5,loss.function="gini",minsplit=30,minbuck=10))
 print(mdl1)
 @ 
 \begin{verbatim}

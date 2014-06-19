@@ -6,7 +6,7 @@
 ####################################################################
 
 
-addon <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts, x.temp,
+addon <- function(bas.fx, y, wt, dat, minsplit, minbuck, real.LIST, opts, x.temp,
                   is.num, control) {
   m <- ncol(bas.fx)  # number of basis functions
   keep.add <- list()
@@ -37,7 +37,7 @@ addon <- function(bas.fx, y, wt, dat, minbuck, real.LIST, opts, x.temp,
                         p=ncol(dat),ORs=real.LIST[[M]], psi=bas.fx[,M],which.K=K)
 
           get.split <- split.fx(psi=split.ors[[1]], y=y, wt=wt, opts=opts,
-                                x.split=dat[,P], n.cut=minbuck,
+                                x.split=dat[,P], minbuck=minbuck, minsplit=minsplit,
                                 real.num=real.LIST[[M]][[P]][[K]],is.num=is.num[P])
 
           all.add[[K]] <- list(cut.value = get.split$val,new.lt = get.split$new.lt,

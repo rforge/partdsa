@@ -3,7 +3,7 @@
 # and used by the "worker" function.
 .Cache <- new.env(parent=emptyenv())
 
-worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
+worker <- function(cv.ind, minsplit, minbuck, cut.off.growth, MPD, missing,
                    loss.function, control=DSA.control(),
                    # XXX default values?
                    wt.method, brier.vec, cox.vec, IBS.wt) {
@@ -50,7 +50,7 @@ worker <- function(cv.ind, minbuck, cut.off.growth, MPD, missing,
   }
 
   ## this calls a function in algAlone2.R
-  ty <- rss.dsa(x=x, y=y, wt=wt, minbuck=minbuck,
+  ty <- rss.dsa(x=x, y=y, wt=wt, minsplit=minsplit, minbuck=minbuck,
                 cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                 loss.function=loss.function, control=control,
                 wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
@@ -98,6 +98,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
   ## the number of the fold for each observation
   missing <- control$missing
   vfold <- control$vfold
+  minsplit <- control$minsplit
   minbuck <- control$minbuck
   cut.off.growth <- control$cut.off.growth
   MPD <- control$MPD
@@ -188,7 +189,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         (is.numeric(sleigh) && sleigh <= 1)) {
       # Use lapply
       worker.init(lib.loc=NULL, x, -1, wt, y)
-      tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minbuck=minbuck,
+      tree.results <- lapply(1:control$leafy.num.trees, worker.leafy, minsplit=minsplit, minbuck=minbuck,
                              cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
                              loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
                              y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
@@ -201,7 +202,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         else
           sleigh
         clusterCall(cl, worker.init, lib.loc=NULL, x, -1, wt, y)
-        tree.results <- clusterApplyLB(cl,1:control$leafy.num.trees,worker.leafy,minbuck=minbuck,
+        tree.results <- clusterApplyLB(cl,1:control$leafy.num.trees,worker.leafy,minsplit=minsplit,minbuck=minbuck,
                                        cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
                                        loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
                                        y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
@@ -211,7 +212,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       } else {
         # Use mclapply
         worker.init(lib.loc=NULL, x, -1, wt, y)
-        tree.results <- mclapply(1:control$leafy.num.trees, worker.leafy, minbuck=minbuck,
+        tree.results <- mclapply(1:control$leafy.num.trees, worker.leafy, minsplit=minsplit, minbuck=minbuck,
                                  cut.off.growth=cut.off.growth, MPD=MPD, missing=missing,
                                  loss.function=loss.function,x.in=x, y.in=y, wt.in=wt, x.test.in=x.test,
                                  y.test.in=y.test, wt.test.in=wt.test,control=control,wt.method=wt.method,
@@ -294,7 +295,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
   		resids.sum <- NULL
   		resids<-y
   		for(i in 1:boost.num.trees){
-  			boost.models[[i]]<-rss.dsa(x=x, y=resids, wt=wt, minbuck=minbuck,
+  			boost.models[[i]]<-rss.dsa(x=x, y=resids, wt=wt, minsplit=minsplit, minbuck=minbuck,
                         cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                         loss.function=loss.function, control=control,
                         wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
@@ -355,7 +356,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
           (is.numeric(sleigh) && sleigh <= 1)) {
         # Use lapply
         worker.init(lib.loc=NULL, x, grp.delt, wt, y)
-        test.risk.DSA <- lapply(1:vfold, worker, minbuck=minbuck, cut.off.growth=cut.off.growth,
+        test.risk.DSA <- lapply(1:vfold, worker, minsplit=minsplit, minbuck=minbuck, cut.off.growth=cut.off.growth,
                                 MPD=MPD, missing=missing, loss.function=loss.function, control=control,
                                 wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
       } else {
@@ -366,7 +367,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
           else
             sleigh
           clusterCall(cl, worker.init, lib.loc=NULL, x, grp.delt, wt, y)
-          test.risk.DSA <- clusterApplyLB(cl, 1:vfold, worker,minbuck=minbuck, cut.off.growth=cut.off.growth,
+          test.risk.DSA <- clusterApplyLB(cl, 1:vfold, worker,minsplit=minsplit,minbuck=minbuck, cut.off.growth=cut.off.growth,
                                           MPD=MPD, missing=missing, loss.function=loss.function, control=control,
                                           wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)
           if (is.numeric(sleigh))
@@ -374,7 +375,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         } else {
           # Use mclapply
           worker.init(lib.loc=NULL, x, grp.delt, wt, y)
-          test.risk.DSA <- mclapply(1:vfold, worker,minbuck=minbuck, cut.off.growth=cut.off.growth,
+          test.risk.DSA <- mclapply(1:vfold, worker,minsplit=minsplit,minbuck=minbuck, cut.off.growth=cut.off.growth,
                                     MPD=MPD, missing=missing, loss.function=loss.function, control=control,
                                     wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt,
                                     mc.cores=sleigh)
@@ -383,10 +384,6 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
 
       ## DSA - after get the cv-validation results back - find
       ## the  number of partitions that minimizes the RSS
-      ## (residual sum of squares). 4 different measures of this.
-      ## can look at overall minimum (or 1se+overall min or the
-      ## first minimum (or 1se+first min). These 4 numbers are in
-      ## pick.k.as.min.DSA, pick.k.se1.DSA, pick.k.DSA, get.k.DSA
 
       cv.risks <- do.call('cbind', test.risk.DSA)
       mean.cv.risk.DSA <- apply(cv.risks, 1, mean, na.rm=T)
@@ -422,7 +419,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     }
 
     ## now go back with test set and full training set and get predictions
-    test2.ty <- rss.dsa(x=x, y=y, wt=wt, minbuck=minbuck,
+    test2.ty <- rss.dsa(x=x, y=y, wt=wt,minsplit=minsplit, minbuck=minbuck,
                         cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                         loss.function=loss.function, control=control,
                         wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt)

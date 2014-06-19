@@ -1,4 +1,4 @@
-worker.leafy <- function(tree.num, minbuck, cut.off.growth, MPD, missing,
+worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missing,
                    loss.function,x.in,y.in,wt.in,x.test.in,y.test.in,wt.test.in,control,
                    wt.method, brier.vec,cox.vec,IBS.wt) {
   ## This was used for testing, presumably
@@ -30,7 +30,7 @@ worker.leafy <- function(tree.num, minbuck, cut.off.growth, MPD, missing,
   wt.oob <- wt.in[list.of.oob.elements]
   
   ## this calls a function in algAlone2.R
-  ty <- rss.dsa(x=x, y=y, wt=wt, minbuck=minbuck,
+  ty <- rss.dsa(x=x, y=y, wt=wt, minsplit=minsplit, minbuck=minbuck,
                 cut.off.growth=cut.off.growth, MPD=MPD,missing=missing,
                 loss.function=loss.function,control = control,
                 wt.method=wt.method, brier.vec=brier.vec)

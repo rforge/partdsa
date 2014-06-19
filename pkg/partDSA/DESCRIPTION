@@ -1,7 +1,7 @@
 Package: partDSA
 Type: Package
 Title: Partitioning using deletion, substitution, and addition moves
-Version: 0.9.6
+Version: 0.9.7
 Author: Annette Molinaro <annette.molinaro@ucsf.edu>,
         Adam Olshen <olshena@biostat.ucsf.edu>,
         Karen Lostritto <karen.lostritto@yale.edu>, 
@@ -15,4 +15,4 @@ Description: partDSA is a novel tool for generating a piecewise
 Depends: R (>= 2.5), survival
 Suggests: parallel, MASS, TH.data, VGAM
 License: GPL-2
-Packaged: 2013-11-06 23:37:38 UTC; olshena
+Packaged: 2013-11-06 23:37:38 UTC; 

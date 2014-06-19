@@ -25,25 +25,21 @@
 ###  to change in the future                                                 #
 ##############################################################################
 
-split.fx <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
+split.fx <- function(psi, y, wt,  x.split, minsplit, minbuck,  real.num, opts,is.num) {
 
-  if(opts$outcome.class=="factor"){
-    get.split <- bincartsplit(psi=psi, y=y, wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num)
-  } else if (opts$outcome.class=="survival"){
-    get.split <- survival.split(psi=psi, y=y, wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts, is.num=is.num)
+  if(opts$outcome.class=="factor"){  #### THIS NEEDS TO BE UPDATED
+    get.split <- bincartsplit(psi=psi, y=y, wt=wt, x.split=x.split, minsplit=minsplit, minbuck=minbuck, real.num=real.num, opts=opts,is.num=is.num)
+  } else if (opts$outcome.class=="survival"){ #### THIS NEEDS TO BE UPDATED
+    get.split <- survival.split(psi=psi, y=y, wt=wt, x.split=x.split,minsplit=minsplit,  minbuck=minbuck, real.num=real.num, opts=opts, is.num=is.num)
   } else {
-    get.split <- cartsplit(psi=psi, y=y, wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num)
+    get.split <- cartsplit(psi=psi, y=y, wt=wt, x.split=x.split, minsplit=minsplit, minbuck=minbuck, real.num=real.num, opts=opts,is.num=is.num)
   }
   return(get.split)
 }
 
-cartsplit <- function(psi, y, wt, x.split, n.cut=6, real.num, opts,is.num) {
+cartsplit <- function(psi, y, wt, x.split, minsplit, minbuck, real.num, opts,is.num) {
 
   if(sum(is.na(x.split))>0){missing="yes"}else{missing="no"}
-  
-  
-  
-
   
   ## psi tells which observations are in node that we are trying to split
   STOP <- 0
@@ -54,142 +50,109 @@ cartsplit <- function(psi, y, wt, x.split, n.cut=6, real.num, opts,is.num) {
   x.s.k <- x.s[psi.s == 1]
   wt.s.k <- wt.s[psi.s == 1]
   y.s.k <- y.s[psi.s == 1]
-  
-  
-  
-  
                                         # if there are missing values, impute the x to be x.impute using the mean or
                                         #  mode. then update x.s.k, y.s.k, wt.s.k to be the non-missing values since
                                         #  that is what will be used to create the splits.
   if(missing=="yes"){
-    
     x.original <- x.s.k
     x.impute<-x.split
-    
     x.impute[which(is.na(x.split))] <- ifelse(is.num==1,mean(x.s.k, na.rm=T),as.numeric(names(which.max(table(x.s.k)))))
-    
     y.s.k <- y.s.k[which(!is.na(x.s.k))]
     wt.s.k <- wt.s.k[which(!is.na(x.s.k))]
-    x.s.k <- x.s.k[which(!is.na(x.s.k))]
-    
-    
-    
+    x.s.k <- x.s.k[which(!is.na(x.s.k))] 
   }
-  
-  
-  
-  
-  
+ 
   y.s.k <- y.s.k- sum(y.s.k * wt.s.k) / sum(wt.s.k)
   cant.split <- FALSE
-  min.split <- n.cut * 2
   
   wtsum <- tapply(wt.s.k, x.s.k, sum)
 
-  ## I added in the condition length(wt.s.k)!=0 since we wouldn't
+  ## Added in the condition length(wt.s.k)!=0 since don't
   ## want to split a node with only one non-zero weight
-  if(length(which(wtsum>0)) <= 1 | length(unique(y.s.k))==1 | length(y.s.k)<min.split | length(which(wt.s.k!=0))<=1) {
-    
+  if(length(which(wtsum>0)) <= 1 | length(unique(y.s.k))==1 | length(y.s.k)<minsplit | length(which(wt.s.k!=0))<=1) {
     STOP <- 1
-  } else if(abs(min.split - max(table(x.s.k))) < n.cut &&
-            ((length(x.s.k) - max(table(x.s.k))) < n.cut)) {
-    STOP <- 1
+  } else if(abs(minsplit - max(table(x.s.k))) < minbuck &&
+            ((length(x.s.k) - max(table(x.s.k))) < minbuck)) {
+    			  STOP <- 1
   } else {  
-    
     wtsum <- tapply(wt.s.k, x.s.k, sum)
     wtsum<-wtsum[!is.na(wtsum)]
     ysum  <- tapply(y.s.k * wt.s.k, x.s.k, sum)
     ysum<-ysum[!is.na(ysum)]
     means <- ysum / wtsum
-    
-    
     n <- length(ysum)
     temp <- cumsum(ysum)[-n]
     left.wt  <- cumsum(wtsum)[-n]
     right.wt <- sum(wt.s.k) - left.wt
     lmean <- temp/left.wt
-
     rmean <- -temp/right.wt
     
     ## the denominator of goodness can sometimes be 0 which causes all
     ## goodness values to be NA. do we really need the denominator
     goodness <- (left.wt * lmean^2 + right.wt * rmean^2) / sum(wt.s.k * y.s.k^2)
-	
 	  if(sum(is.na(goodness))==length(goodness)){
          STOP <- 1
 	  }else{
-
-  
-    best.ind <- central.split(which.max(goodness),n)
-    max.g <- max(goodness, na.rm=T)
-    in.set <- as.numeric(names(goodness)[best.ind])
-    
-    
-    if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
-    if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
-    ## Need to consider number in the node where wt doesn't equal 0
-    num.in.set <- sum(in.x & psi==1 & wt >0)
-    num.not.in.set <- length(which(wt.s.k!=0)) - num.in.set
- 
-    
-    if((num.in.set >= min.split / 2) &&
-       (num.not.in.set >= min.split / 2)) {
-      
-      if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
-      if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
-      
-      new.lt <- as.numeric(in.x)
-      new.gt <- 1 - new.lt
-      new.lt <- ifelse(psi == 0, 0, new.lt)
-      new.gt <- ifelse(psi == 0, 0, new.gt)
-       val <- in.set + 1e-10
-      cant.split <- FALSE
-    } else {
-      ## so we don't split a variable resulting in
-      ## a vector with less than n.cut observations
-      n.chg <- 2
-      
-      ## sequentially try goodness values until we have a split
-      ## with enough observations in each basis functions
-  
-      ## Some of the temp values will be NA meaning some of the
-      ## goodness values will be NA meaning that when we go through 
-      ## the while loop, there is a chance that max.g could be NA as
-      ## well and therefore I made this a condition in the while loop so
-      ## the loop will keep repeating until we have a non-NA max.g value.
-      while(is.na(max.g) | !(num.in.set >= min.split / 2 &&
-              num.not.in.set >= min.split / 2)) {
+		  best.ind <- central.split(which.max(goodness),n)
+      		max.g <- max(goodness, na.rm=T)
+      		in.set <- as.numeric(names(goodness)[best.ind])
+  		if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
+      		if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
+      		## Need to consider number in the node where wt doesn't equal 0
+      		num.in.set <- sum(in.x & psi==1 & wt >0)
+      		num.not.in.set <- length(which(wt.s.k!=0)) - num.in.set
+     		if((num.in.set >= minbuck) &&
+         		(num.not.in.set >= minbuck)) {
+        		if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
+        		if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))} 
+        	  new.lt <- as.numeric(in.x)
+        	  new.gt <- 1 - new.lt
+        	  new.lt <- ifelse(psi == 0, 0, new.lt)
+        	  new.gt <- ifelse(psi == 0, 0, new.gt)
+         	  val <- in.set + 1e-10
+        	  cant.split <- FALSE
+        } else {
+          ## so we don't split a variable resulting in
+          ## a vector with less than minbuck observations
+          n.chg <- 2
         
-        if(n.chg >= n) {
-          STOP <- 1
-          break
-        }
-        max.g <- goodness[order(goodness)][n - n.chg]
-        n.chg <- n.chg + 1
-        best.ind <- central.split(which(goodness == max.g),n)
-        in.set <- as.numeric( names(goodness)[best.ind])
-        if(missing=="no"){ in.x <- (x.split <= (in.set+1e-10) )}
-        if(missing=="yes"){in.x <- (x.impute <= (in.set + 1e-10))}
-        num.in.set <- sum(in.x & psi==1 & wt>0)
-        num.not.in.set <- length(which(wt.s.k>0)) - num.in.set
-
-       
+          ## sequentially try goodness values until we have a split
+          ## with enough observations in each basis functions
+    
+          ## Some of the temp values will be NA meaning some of the
+          ## goodness values will be NA meaning that when we go through 
+          ## the while loop, there is a chance that max.g could be NA as
+          ## well and therefore I made this a condition in the while loop so
+          ## the loop will keep repeating until we have a non-NA max.g value.
+          while(is.na(max.g) | !(num.in.set >=  minbuck &&
+                num.not.in.set >= minbuck)) {
+          
+            if(n.chg >= n) {
+              STOP <- 1
+              break
+            }
+            max.g <- goodness[order(goodness)][n - n.chg]
+            n.chg <- n.chg + 1
+            best.ind <- central.split(which(goodness == max.g),n)
+            in.set <- as.numeric( names(goodness)[best.ind])
+            if(missing=="no"){ in.x <- (x.split <= (in.set+1e-10) )}
+            if(missing=="yes"){in.x <- (x.impute <= (in.set + 1e-10))}
+            num.in.set <- sum(in.x & psi==1 & wt>0)
+            num.not.in.set <- length(which(wt.s.k>0)) - num.in.set
+          } # end while statement
         
-      } # end while statement
-      
-      if(missing=="no"){in.x <- (x.split <= (in.set + 1e-10))}
-      if(missing=="yes"){in.x <- (x.impute <= (in.set + 1e-10))}
-      new.lt <- as.numeric(in.x)
-      new.gt <- 1 - new.lt
-      new.lt <- ifelse(psi == 0, 0, new.lt)
-      new.gt <- ifelse(psi == 0, 0, new.gt)
-      val <-in.set + 1e-10
-      cant.split <- FALSE
-      
+          if(missing=="no"){in.x <- (x.split <= (in.set + 1e-10))}
+          if(missing=="yes"){in.x <- (x.impute <= (in.set + 1e-10))}
+          new.lt <- as.numeric(in.x)
+          new.gt <- 1 - new.lt
+          new.lt <- ifelse(psi == 0, 0, new.lt)
+          new.gt <- ifelse(psi == 0, 0, new.gt)
+          val <-in.set + 1e-10
+          cant.split <- FALSE  
+        } # end else
     } # end else
-    }
   } # end main code
-  if(STOP )  {
+  if(STOP)  {
     new.lt <- psi
     new.gt <- rep(0, length(psi))
     cant.split <- TRUE
@@ -197,35 +160,18 @@ cartsplit <- function(psi, y, wt, x.split, n.cut=6, real.num, opts,is.num) {
     val <- NA
     max.g <- NA
   }
-
   return(list(new.lt=new.lt, new.gt=new.gt,
               val=val, cant.split=cant.split,
               max.g=max.g))
 }
 
 
-
-
-
-
-
-
-
-
 #################################################################################################
 #################################################################################################
 #################################################################################################
 #################################################################################################
 #################################################################################################
-
-
-
-
-
-
-
-
-bincartsplit <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
+bincartsplit <- function(psi, y, wt,  x.split, minsplit, minbuck, real.num, opts,is.num) {
   
   ## put everything in order by x so that we can find a split,
   ## ".s" stands for sorted
@@ -240,15 +186,7 @@ bincartsplit <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
   wt.s.k <- wt.s[psi.s == 1]
   y.s.k <- y.s[psi.s == 1]
   n.s.k <- length(y.s.k)
-  min.split<-2*n.cut
-  
-  
-  
-  
-  
-  
-  
-                                        # if there are missing values, impute the x to be x.impute using the mean or
+                                         # if there are missing values, impute the x to be x.impute using the mean or
                                         #  mode. then update x.s.k, y.s.k, wt.s.k to be the non-missing values since
                                         #  that is what will be used to create the splits. Because this is for a
                                         # categorical outcome, we average within each node for each outcome class.
@@ -284,7 +222,7 @@ bincartsplit <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
   
   
   
-  if(length(unique(y.s.k)) == 1 | length(unique(x.s.k))==1 | length(y.s.k)<min.split)  {
+  if(length(unique(y.s.k)) == 1 | length(unique(x.s.k))==1 | length(y.s.k)<minsplit)  {
     STOP <- 1
     
   } else{
@@ -324,8 +262,8 @@ bincartsplit <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
     num.not.in.set <- length(x.s.k) - num.in.set
     
     
-    if((num.in.set >= min.split / 2) &&
-       (num.not.in.set >= min.split / 2)) {
+    if((num.in.set >= minbuck) &&
+       (num.not.in.set >= minbuck)) {
       
       if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
       if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
@@ -342,8 +280,8 @@ bincartsplit <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
       
       ## Given that best.ind are there enough on
       ## either side to split this region?
-      while(!(num.in.set >= min.split / 2 &&
-              num.not.in.set >= min.split / 2)) {
+      while(!(num.in.set >= minbuck &&
+              num.not.in.set >= minbuck)) {
         
         if(n.chg >= n) {
           STOP <- 1

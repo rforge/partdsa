@@ -1,23 +1,27 @@
-##### I am using a method similar to cartsplit for survival since I am using the same L2 loss function just with different weights. For IPCW 
-## and Brier when there is only 1 cutpoint, we can directly use the cartsplit function. However, when have multiple cutpoints, I am attempting
-## to use the same code as in cartsplit, but I'm averaging goodness over all the cutpoints to choose the best split point. This concept was developed
-## in the interest of keeping the running time reasonable. The approach I took over the summer results in a very high running time, so I am hoping
+##### I am using a method similar to cartsplit for survival since I am using the same L2 loss 
+# function just with different weights. For IPCW 
+## and Brier when there is only 1 cutpoint, we can directly use the cartsplit function. 
+# However, when have multiple cutpoints, I am attempting
+## to use the same code as in cartsplit, but I'm averaging goodness over all the cutpoints 
+# to choose the best split point. This concept was developed
+## in the interest of keeping the running time reasonable. The approach I took over the summer 
+# results in a very high running time, so I am hoping
 ## that this will be an improvement.
-survival.split <- function(psi, y, wt,  x.split, n.cut=6, real.num, opts,is.num) {
+survival.split <- function(psi, y, wt,  x.split, minsplit, minbuck, real.num, opts,is.num) {
 
 
 ## Simple case where the weights are constant
 if(opts$loss.fx=="IPCW") {
    
                 
- return( cartsplit(psi=psi, y=y[,1], wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num) )
+ return( cartsplit(psi=psi, y=y[,1], wt=wt, x.split=x.split,minsplit=minsplit,  minbuck=minbuck, real.num=real.num, opts=opts,is.num=is.num) )
 
 
 }else if(opts$loss.fx=="Brier" && length(opts$brier.vec)==1){
    
 	y=as.numeric(y[,1]>opts$brier.vec[1])
     
-    return( cartsplit(psi=psi, y=y, wt=wt, x.split=x.split, n.cut=n.cut, real.num=real.num, opts=opts,is.num=is.num) )
+    return( cartsplit(psi=psi, y=y, wt=wt, x.split=x.split, minsplit=minsplit, minbuck=minbuck, real.num=real.num, opts=opts,is.num=is.num) )
 ## more complicated case where we have changing y and wt values depending on which cutpoint we use
 }else if(opts$loss.fx=="Brier" && length(opts$brier.vec)>1){  
      
@@ -75,12 +79,11 @@ if(opts$loss.fx=="IPCW") {
   
   y.s.k <- y.s.k- sum(y.s.k * wt.s.k) / sum(wt.s.k)
   cant.split <- FALSE
-  min.split <- n.cut * 2
-  if(length(unique(x.s.k)) == 1 | length(y.s.k)<min.split | length(which(wt.s.k!=0))<=1) {
+  if(length(unique(x.s.k)) == 1 | length(y.s.k)<minsplit | length(which(wt.s.k!=0))<=1) {
     
     STOP <- 1
-  } else if(abs(min.split - max(table(x.s.k))) < n.cut &&
-            ((length(x.s.k) - max(table(x.s.k))) < n.cut)) {
+  } else if(abs(minsplit - max(table(x.s.k))) < minbuck &&
+            ((length(x.s.k) - max(table(x.s.k))) < minbuck)) {
     STOP <- 1
   } else {  
     
@@ -174,8 +177,8 @@ if(opts$loss.fx=="IPCW") {
     num.not.in.set <- length(which(wt.s.k>0)) - num.in.set
     
     
-    if((num.in.set >= min.split / 2) &&
-       (num.not.in.set >= min.split / 2)) {
+    if((num.in.set >= minbuck) &&
+       (num.not.in.set >= minbuck)) {
       
       if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
       if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
@@ -188,14 +191,14 @@ if(opts$loss.fx=="IPCW") {
       cant.split <- FALSE
     } else {
       ## so we don't split a variable resulting in
-      ## a vector with less than n.cut observations
+      ## a vector with less than minbuck observations
       n.chg <- 2
       
       ## sequentially try goodness values until we have a split
       ## with enough observations in each basis functions
       ## added in is.na(max.g) because it is possible that some goodness values are NA if first or last weights are 0.
-      while(is.na(max.g) | !(num.in.set >= min.split / 2 &&
-              num.not.in.set >= min.split / 2)) {
+      while(is.na(max.g) | !(num.in.set >= minbuck &&
+              num.not.in.set >= minbuck)) {
         
         if(n.chg >= n) {
           STOP <- 1

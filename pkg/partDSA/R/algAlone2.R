@@ -1,6 +1,6 @@
-rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
-                    MPD=0.1, missing="no", loss.function="default",
-                    control=DSA.control(), wt.method="KM", brier.vec=NULL, cox.vec=NULL, IBS.wt=NULL) {
+rss.dsa <- function(x, y, wt, minsplit, minbuck, cut.off.growth,
+                    MPD, missing, loss.function,
+                    control, wt.method, brier.vec, cox.vec, IBS.wt) {
   p <- ncol(x)
   n <- nrow(x)
 
@@ -76,8 +76,8 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
     opts$wt.method <- wt.method
   if (opts$loss.fx == "Brier"){
     opts$brier.vec <- brier.vec
-	opts$wt.method <- wt.method
-	opts$IBS.wt <- IBS.wt
+	  opts$wt.method <- wt.method
+	  opts$IBS.wt <- IBS.wt
 	}
   f.Io <- risk.fx(bas.fx=bas.fx, y=y, wt=wt,opts=opts)
 
@@ -120,7 +120,7 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
       ## create new basis functions using x.temp from last good delete move
       bas.fx <- data.frame(assign.obs.to.bf(dat2=x.temp, n=n, p=p, BFs=dynBF))
 
-      try.sub.g <- subst(bas.fx=bas.fx, y=y, wt=wt, dat=x, minbuck=minbuck,
+      try.sub.g <- subst(bas.fx=bas.fx, y=y, wt=wt, dat=x, minsplit=minsplit, minbuck=minbuck,
                          real.LIST=dynBF, opts=opts, x.temp=x.temp,
                          is.num=is.num, control=control)
 
@@ -265,6 +265,7 @@ rss.dsa <- function(x, y, wt, minbuck=10, cut.off.growth=10,
 
 
   object <- list(cut.off.growth=cut.off.growth,
+                 minsplit=minsplit,
                  minbuck=minbuck,
                  MPD=MPD,
                  IkPn=keep.bas.fx,

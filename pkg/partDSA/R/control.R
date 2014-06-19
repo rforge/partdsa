@@ -1,4 +1,4 @@
-DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
+DSA.control <- function(vfold=10, minsplit=20 , minbuck=round(minsplit/3),  cut.off.growth=10, MPD=0.1,
                         missing="impute.at.split", loss.function="default",
                         wt.method="KM", brier.vec=NULL,
                         leafy=0, leafy.random.num.variables.per.split=4,
@@ -25,9 +25,12 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
   if (!is.numeric(vfold) || length(vfold) > 1 || vfold < 1)
     stop('vfold must be a numeric value >= 1')
 
+  if (!is.numeric(minsplit) || length(minsplit) > 1 || minsplit < 1)
+    stop('minsplit must be a numeric value >= 1')
+  
   if (!is.numeric(minbuck) || length(minbuck) > 1 || minbuck < 1)
     stop('minbuck must be a numeric value >= 1')
-
+  
   if (!is.numeric(cut.off.growth) || length(cut.off.growth) > 1 ||
       cut.off.growth < 1)
     stop('cut.off.growth must be a numeric value >= 1')
@@ -57,7 +60,7 @@ DSA.control <- function(vfold=10, minbuck=6, cut.off.growth=10, MPD=0.1,
   if (!is.logical(save.input))
     stop('save.input must be logical')
 
-  list(vfold=vfold, minbuck=minbuck, cut.off.growth=cut.off.growth,
+  list(vfold=vfold, minsplit=minsplit, minbuck=minbuck, cut.off.growth=cut.off.growth,
        MPD=MPD, missing=missing, loss.function=loss.function,
        wt.method=wt.method, brier.vec=brier.vec, cox.vec=cox.vec, IBS.wt=IBS.wt, leafy=leafy, 
        leafy.random.num.variables.per.split=leafy.random.num.variables.per.split,
