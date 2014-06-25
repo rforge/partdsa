@@ -54,13 +54,13 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
   }
 
 
-  first.partition.with.var<- mapply(rowmin, ty[10],1:dim(ty[10]$var.importance)[1],SIMPLIFY=TRUE,USE.NAMES=FALSE)
-  total.partitions.possible<- (dim(ty[10]$var.importance)[2])*(dim(ty[10]$var.importance)[2]+1)/2 - 1
-  variable.penetrance <-mapply(rowappearance,ty[10],1:dim(ty[10]$var.importance)[1],SIMPLIFY=TRUE,USE.NAMES=FALSE)/total.partitions.possible
+  first.partition.with.var<- mapply(rowmin, list(ty$var.importance),1:nrow(ty$var.importance),SIMPLIFY=TRUE,USE.NAMES=FALSE)
+  total.partitions.possible<- (ncol(ty$var.importance))*(ncol(ty$var.importance)+1)/2 - 1
+  variable.penetrance <-mapply(rowappearance,list(ty$var.importance),1:nrow(ty$var.importance),SIMPLIFY=TRUE,USE.NAMES=FALSE)/total.partitions.possible
   
   #If there are two many partitions, ty will not return null for the unused partitions, but will abruptly stop
   #max growth gets the maximum possible partition for the tree              
-  max.growth <- length(ty[[5]])
+  max.growth <- length(ty$coefficients)
 
 	
   if(!identical(x.in,x.test.in)){
