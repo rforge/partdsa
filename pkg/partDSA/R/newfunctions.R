@@ -194,7 +194,7 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
                 #all observations in this node are missing on this 
                 #variable so get average from this variale overall
           	if (length(which(!is.na(x[bas[,1]==1,i])))==0){
-                	replace1 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                	replace1 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[,i])))))
                
                		 warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable."))
@@ -204,13 +204,13 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
                 }else if (length(which(!is.na(x[bas[,1]==1&
                 y==levels(y)[j],i])))==0){
 			
-                        replace1 <- (ifelse(is.num[i]==1,mean(x[bas[,1]==1,i],na.rm=T),as.numeric(names(which.max(table(x[bas[,1]==1,i]))))))
+                        replace1 <- (ifelse(is.num[i]==1,mean(x[bas[,1]==1,i],na.rm=TRUE),as.numeric(names(which.max(table(x[bas[,1]==1,i]))))))
                 	warning(paste("All values of variable",names(x.temp)[i],"for level",levels(y)[j], "are NA in this node. Using overall average in the node"))
 
                 #otherwise:no warnings messages, just get the imputed value from the mean or majority vote of those observations in proper level and proper node
           	}else{
                 	replace1 <-  ifelse(is.num[i]==1,
-                	mean(x[bas[,1]==1& y==levels(y)    [j],i],na.rm=T),
+                	mean(x[bas[,1]==1& y==levels(y)    [j],i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[bas[,1]==1&y==levels(y)[j],i])))))
          	}
          
@@ -225,18 +225,18 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
           if(length(x[bas[,2]==1 & y==levels(y)[j],i])>0){
           
 		if (length(which(!is.na(x[bas[,2]==1,i])))==0){
-                	replace2 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                	replace2 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[,i])))))
                 	warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable. "))
           
 		}else if (length(which(!is.na(x[bas[,2]==1&y==levels(y)[j],i])))==0){
                 
-			replace2 <- ifelse(is.num[i]==1,mean(x[bas[,2]==1,i],na.rm=T),
+			replace2 <- ifelse(is.num[i]==1,mean(x[bas[,2]==1,i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[bas[,2]==1,i])))))
                		warning(paste("All values of variable",names(x.temp)[i],"for level",levels(y)[j], "are NA in this node. Using overall average in the node."))
           	}else{
                 	replace2 <-  ifelse(is.num[i]==1,
-                	mean(x[bas[,2]==1& y==levels(y)[j],i],na.rm=T),
+                	mean(x[bas[,2]==1& y==levels(y)[j],i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[bas[,2]==1&y==levels(y)[j],i])))))
          	}
          
@@ -262,14 +262,14 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
         #if all observations in the node are NA for this variale,
         # take overall average
         if (length(which(!is.na(x[bas[,1]==1,i])))==0){
-                replace1 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                replace1 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[,i])))))
                 warning(paste("All values of variable",names(x.temp)[i],
                 "are NA in node. Using overall average of this variable."))
         #otherwise take average within this node
         }else{
                 replace1 <- ifelse (is.num[i]==1,
-                mean(x[bas[,1]==1,i],na.rm=T),
+                mean(x[bas[,1]==1,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[bas[,1]==1,i])))))
         }
      
@@ -279,14 +279,14 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
         #if all observaitons in the node are NA for this variable,
         # take overall average
 	if (length(which(!is.na(x[bas[,2]==1,i])))==0){
-                replace2 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                replace2 <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[,i])))))
                 warning(paste("All values of variable",names(x.temp)[i],
                 "are NA in node. Using overall average of this variable."))
         #otherwise take average within this node
         }else{
                 replace2 <- ifelse (is.num[i]==1,
-                mean(x[bas[,2]==1,i],na.rm=T),
+                mean(x[bas[,2]==1,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[bas[,2]==1,i])))))
         }
         
@@ -318,16 +318,16 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
           if(length((x[bas==1&y==levels(y)[j],i]))>0){
 
           	if (length(which(!is.na(x[bas==1,i])))==0){
-                	replace <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                	replace <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[,i])))))
                         warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable."))
           	}else if (length(which(!is.na(x[bas==1&y==levels(y)[j],i])))==0){
-			replace <- ifelse(is.num[i]==1,mean(x[bas==1,i],na.rm=T),as.numeric(names(which.max(table(x[bas==1,i])))))
+			replace <- ifelse(is.num[i]==1,mean(x[bas==1,i],na.rm=TRUE),as.numeric(names(which.max(table(x[bas==1,i])))))
                 	warning(paste("All values of variable",names(x.temp)[i],"for level",levels(y)[j], "are NA in each node.
                          Using overall average in the node."))
           	}else{
                		replace <-  ifelse(is.num[i]==1,
-                	mean(x[bas==1& y==levels(y)[j],i],na.rm=T),
+                	mean(x[bas==1& y==levels(y)[j],i],na.rm=TRUE),
                 	as.numeric(names(which.max(table(x[bas==1&y==levels(y)[j],i])))))       
 
          	}
@@ -350,15 +350,12 @@ update.missing <- function (x.temp,x, y, bas,is.num, todo, missing){
      #in the case of a continuous outcome
       for (i in 1:dim(x.temp)[2]){
         na.value <- is.na(x[,i])
-      
-        
         if (length(which(!is.na(x[bas==1,i])))==0){
-                replace <- ifelse(is.num[i]==1,mean(x[,i],na.rm=T),
+                replace <- ifelse(is.num[i]==1,mean(x[,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[,i])))))
                 warning(paste("All values of variable",names(x.temp)[i],"are NA in node. Using overall average of this variable."))
         }else{
-                replace <- ifelse (is.num[i]==1,
-                mean(x[bas==1,i],na.rm=T),
+                replace <- ifelse (is.num[i]==1,mean(x[bas==1,i],na.rm=TRUE),
                 as.numeric(names(which.max(table(x[bas==1,i])))))
         }
         x.temp[na.value& bas==1,i] <- replace
@@ -390,12 +387,12 @@ impute.test <- function(x,y,x.test,missing){
   #  if(is.factor(y)){
   #   for(i in levels(y)){
   #      x.test[(is.na(x.test[,k])&y.test==i),k] <- ifelse(is.factor(x[,k]),
-  #      names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=T))
+  #      names(which.max(table(x[y==i,k]))),mean(x[y==i,k],na.rm=TRUE))
   #      }
     
    # }else {   
       x.test[(is.na(x.test[,k])),k] <- ifelse(is.factor(x[,k]),
-      names(which.max(table(x[,k]))),mean(x[,k],na.rm=T))
+      names(which.max(table(x[,k]))),mean(x[,k],na.rm=TRUE))
    # }
   }
 
