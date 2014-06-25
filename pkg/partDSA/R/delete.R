@@ -37,7 +37,7 @@ best.bfs.to.combine <- function(bas.fx, y, wt, opts) {
         all.combo[i,j]<-risk.fx(bas.fx=data.frame(remove.bf),y=y,wt=wt,opts=opts)
       }
     }
-    index.min <- min(all.combo, na.rm=T)
+    index.min <- min(all.combo, na.rm=TRUE)
     pick.m <- which.min(all.combo)[1]
     bf.2 <- ceiling(pick.m / (M-1))
     bf.1 <- pick.m - ((M-1) * (bf.2-1))
@@ -157,7 +157,7 @@ check.for.repeated.OR.statments <- function(new.list) {
         compare.mat[P,which(compare.mat[P,]==1)]<- NA
     }
 
-    keep <- apply(compare.mat, 2, sum,na.rm=T)
+    keep <- apply(compare.mat, 2, sum,na.rm=TRUE)
     if(length(which(keep>0)) > 0 & length(which(keep==apply(!is.na(compare.mat),2,sum)))>0 ) {
       identify.col<-which(keep>0)
       for(or.col in identify.col){

@@ -386,8 +386,8 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       ## the  number of partitions that minimizes the RSS
 
       cv.risks <- do.call('cbind', test.risk.DSA)
-      mean.cv.risk.DSA <- apply(cv.risks, 1, mean, na.rm=T)
-      sd.cv.risk <- apply(cv.risks, 1, sd, na.rm=T)
+      mean.cv.risk.DSA <- apply(cv.risks, 1, mean, na.rm=TRUE)
+      sd.cv.risk <- apply(cv.risks, 1, sd, na.rm=TRUE)
     } else {
       mean.cv.risk.DSA <- NULL
       sd.cv.risk <- NULL

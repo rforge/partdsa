@@ -124,7 +124,7 @@ bfs.to.combine <- function(bas.fx, y, wt, opts, var1, var2) {
   for(ind in 1:6)
     all.combo[ind] <- all.poss.subs[[ind]][[1]]
 
-  index.min <- min(all.combo, na.rm=T)
+  index.min <- min(all.combo, na.rm=TRUE)
   pick.sub <- c(1:6)[all.combo == index.min][1]
   bf.2 <- all.poss.subs[[pick.sub]][[3]]
   bf.1 <- all.poss.subs[[pick.sub]][[2]]

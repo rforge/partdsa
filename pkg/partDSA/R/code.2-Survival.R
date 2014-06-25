@@ -62,7 +62,7 @@ if(opts$loss.fx=="IPCW") {
     x.original <- x.s.k
     x.impute<-x.split
     
-    x.impute[which(is.na(x.split))] <- ifelse(is.num==1,mean(x.s.k, na.rm=T),as.numeric(names(which.max(table(x.s.k)))))
+    x.impute[which(is.na(x.split))] <- ifelse(is.num==1,mean(x.s.k, na.rm=TRUE),as.numeric(names(which.max(table(x.s.k)))))
     
     toSave=which(!is.na(x.s.k))
     y.s.k <- y.s.k[toSave]

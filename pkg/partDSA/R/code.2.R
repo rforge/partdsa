@@ -56,7 +56,7 @@ cartsplit <- function(psi, y, wt, x.split, minsplit, minbuck, real.num, opts,is.
   if(missing=="yes"){
     x.original <- x.s.k
     x.impute<-x.split
-    x.impute[which(is.na(x.split))] <- ifelse(is.num==1,mean(x.s.k, na.rm=T),as.numeric(names(which.max(table(x.s.k)))))
+    x.impute[which(is.na(x.split))] <- ifelse(is.num==1,mean(x.s.k, na.rm=TRUE),as.numeric(names(which.max(table(x.s.k)))))
     y.s.k <- y.s.k[which(!is.na(x.s.k))]
     wt.s.k <- wt.s.k[which(!is.na(x.s.k))]
     x.s.k <- x.s.k[which(!is.na(x.s.k))] 
@@ -94,7 +94,7 @@ cartsplit <- function(psi, y, wt, x.split, minsplit, minbuck, real.num, opts,is.
          STOP <- 1
 	  }else{
 		  best.ind <- central.split(which.max(goodness),n)
-      		max.g <- max(goodness, na.rm=T)
+      		max.g <- max(goodness, na.rm=TRUE)
       		in.set <- as.numeric(names(goodness)[best.ind])
   		if(missing=="no") {in.x <- (x.split <= (in.set + 1e-10))}
       		if(missing=="yes") {in.x <- (x.impute <= (in.set + 1e-10))}
@@ -204,13 +204,13 @@ bincartsplit <- function(psi, y, wt,  x.split, minsplit, minbuck, real.num, opts
       if (length(which(!is.na(x.s.k[y.s.k==i])))==0){
         
         x.impute[which(is.na(x.split) & y==i)] <- ifelse(is.num==1,
-                                          mean(x.s.k,na.rm=T),as.numeric(names(which.max(table(x.s.k)))))
+                                          mean(x.s.k,na.rm=TRUE),as.numeric(names(which.max(table(x.s.k)))))
         
       }else{
         
         
         x.impute[which(is.na(x.split) & y==i)] <- ifelse(is.num==1,
-                                          mean(x.s.k[y.s.k==i], na.rm=T),
+                                          mean(x.s.k[y.s.k==i], na.rm=TRUE),
                                           as.numeric(names(which.max(table(x.s.k[y.s.k==i])))))
       }
     }
