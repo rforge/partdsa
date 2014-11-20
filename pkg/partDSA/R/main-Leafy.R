@@ -21,9 +21,7 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
 
   list.of.training.set.elements<-unique(obs.in.bag)
   list.of.oob.elements <- setdiff(seq(1:dim(x.in)[1]),list.of.training.set.elements)
-   
-
-  
+    
   # OOB Setup
   x.oob <- data.frame(x.in[list.of.oob.elements,])
   y.oob <- y.in[list.of.oob.elements]
@@ -36,23 +34,22 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
                 wt.method=wt.method, brier.vec=brier.vec)
 
   rowmin <- function(matrix,row){
-  	if(length(which(matrix[row,]!=0))==0){
-  		dim(matrix)[2]
-  	}else{
-	  	min(which(matrix[row,]!=0))-1
-	}
+    if(length(which(matrix[row,]!=0))==0){
+      dim(matrix)[2]
+    }else{
+      min(which(matrix[row,]!=0))-1
+    }
   }
 
   rowappearance<-function(matrix,row){
-      if(length(which(matrix[row,]!=0))==0){
-         0
-       }else{
-        #This line can be used to get where it appears --potential use later if we don't want to sum all possible appear. 
-        #which(matrix[row,]!=0)
-        sum(matrix[row,])
-     }
+    if(length(which(matrix[row,]!=0))==0){
+      0
+    }else{
+ #This line can be used to get where it appears --potential use later if we don't want to sum all possible appear.
+ #which(matrix[row,]!=0)
+      sum(matrix[row,])
+    }
   }
-
 
   first.partition.with.var<- mapply(rowmin, list(ty$var.importance),1:nrow(ty$var.importance),SIMPLIFY=TRUE,USE.NAMES=FALSE)
   total.partitions.possible<- (ncol(ty$var.importance))*(ncol(ty$var.importance)+1)/2 - 1
@@ -62,7 +59,7 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
   #max growth gets the maximum possible partition for the tree              
   max.growth <- length(ty$coefficients)
 
-	
+  ##Impute missing x values	
   if(!identical(x.in,x.test.in)){
   	x.test <- impute.test(x=x.in,y=y.in,x.test=x.test.in,missing=missing) 
   }
@@ -70,6 +67,58 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
   					x.test = x.oob, missing = missing)
   
   pred.oob.DSA <- predict(ty, x.oob)  
+
+#Add Breiman variable importance
+
+  n <- nrow(x.oob)
+  p <- ncol(x.oob)
+
+  pred.oob.DSA.permuted <- vector("list",p)
+  for(i in 1:p){
+    x.oob.permuted <- x.oob
+    x.oob.permuted[,i] <- x.oob[sample(1:n),i]
+    pred.oob.DSA.permute <- predict(ty, x.oob.permuted)
+    if(is.factor(y)){
+      pred.oob.DSA.permute <-pred.oob.DSA.permute[[max.growth]]
+      pred.oob.DSA.permute<- as.numeric(levels(pred.oob.DSA.permute))[as.integer(pred.oob.DSA.permute)]
+    }
+    else{
+      pred.oob.DSA.permute<-pred.oob.DSA.permute[,max.growth]
+    }
+    pred.oob.DSA.permuted[[i]] <- pred.oob.DSA.permute
+  }
+  
+#Add partial derivative variable importance
+
+  pred.oob.DSA.sorted <- vector("list",p)
+  for(i in 1:p){
+    pred.oob.DSA.sorted[[i]] <- matrix(NA_real_,n,n)
+    x.oob.sorted <- x.oob
+    x.values <- sort(x.oob[,i])
+    for(j in 1:n){
+      x.oob.sorted[,i] <- x.values[j]
+      pred.oob.DSA.sort <- predict(ty, x.oob.sorted)
+    if(is.factor(y)){
+      pred.oob.DSA.sort <-pred.oob.DSA.sort[[max.growth]]
+      pred.oob.DSA.sort<- as.numeric(levels(pred.oob.DSA.sort))[as.integer(pred.oob.DSA.sort)]
+    }
+    else{
+      pred.oob.DSA.sort<-pred.oob.DSA.sort[,max.growth]
+    }
+    pred.oob.DSA.sorted[[i]][,j] <- pred.oob.DSA.sort
+    }
+  }
+
+#Here actually calculate the partial derivative errors   
+
+  partial.derivative.error <- rep(0,p)
+  for(i in 1:p){
+    for(j in 1:(n-1)){
+      partial.derivative.error[i] <- partial.derivative.error[i]+sum((pred.oob.DSA.sorted[[i]][,(j+1)]-pred.oob.DSA.sorted[[i]][,j])^2)
+    }
+  }
+  partial.derivative.error <- partial.derivative.error/(n*(n-1))
+  
   if(!identical(x.in, x.test.in)){
   	pred.test.set.DSA <- predict(ty, x.test.in)
   	}
@@ -93,20 +142,23 @@ worker.leafy <- function(tree.num, minsplit, minbuck, cut.off.growth, MPD, missi
   	  	}
   	}
 
+###Computing the OOBError Rate
+  tree.oob.pred.values <- array(NA,c(dim(x.in)[1],1))
+  tree.oob.pred.values[list.of.oob.elements,] <- pred.oob.DSA
+  
+###Computing the OOBError Rate for permuted data
+  tree.oob.pred.values.permuted <- array(NA,c(dim(x.in)[1],p))
+  for(i in 1:p){
+    tree.oob.pred.values.permuted[list.of.oob.elements,i] <- pred.oob.DSA.permuted[[i]]
+  }
  	
- 	###Computing the OOBError Rate
- 	tree.oob.pred.values <- array(NA,c(dim(x.in)[1],1))
- 	tree.oob.pred.values[list.of.oob.elements,] <- pred.oob.DSA
- 	
- 	tree.test.set.pred.values <- NA #Initialize this value if there is no training set
- 	if(!identical(x.in,x.test.in))
- 	{
- 		tree.test.set.pred.values<- array(NA,c(dim(x.test.in)[1],1))
-  	  	tree.test.set.pred.values[1:dim(x.test.in)[1],]<-pred.test.set.DSA
- 		}
- 	
+  tree.test.set.pred.values <- NA #Initialize this value if there is no training set
+  if(!identical(x.in,x.test.in)){
+    tree.test.set.pred.values<- array(NA,c(dim(x.test.in)[1],1))
+    tree.test.set.pred.values[1:dim(x.test.in)[1],]<-pred.test.set.DSA
+  }
 
-   list(tree.oob.pred.values,ty,tree.test.set.pred.values,first.partition.with.var,variable.penetrance)
+  list(tree.oob.pred.values,ty,tree.test.set.pred.values,first.partition.with.var,variable.penetrance,tree.oob.pred.values.permuted,partial.derivative.error)
 }
 
 print.LeafyDSA<-function(x, ...){

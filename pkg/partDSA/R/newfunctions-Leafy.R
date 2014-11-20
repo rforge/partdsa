@@ -1,5 +1,5 @@
 categorical.predictions<- function(predicted.values.by.tree,predicted.test.set.values.by.tree,y,y.test,x,x.test,
-								   y.original, y.test.original){
+								   y.original, y.test.original, predicted.values.by.tree.permuted){
 	
 	overall.pred.values <- apply(array(unlist(predicted.values.by.tree), dim = c(dim								   (predicted.values.by.tree[[1]]), length(predicted.values.by.tree))), 1:2,								   MatrixMode)
 	training.set.error<- categorical.error(overall.pred.values,y)
@@ -42,10 +42,23 @@ categorical.error<-function(overall.pred.values,y){
 	
 	}
 
-numerical.predictions<- function(predicted.values.by.tree,predicted.test.set.values.by.tree,y,y.test,x,x.test,wt,wt.test){
+numerical.predictions<- function(predicted.values.by.tree,predicted.test.set.values.by.tree,y,y.test,x,x.test,wt,wt.test,predicted.values.by.tree.permuted){
 	
 	training.set.results<-numerical.predicted.value.and.error(predicted.values.by.tree,y,wt)
-	
+        #Breiman
+	p <- ncol(predicted.values.by.tree.permuted[[1]])
+        ntree <- length(predicted.values.by.tree.permuted)
+        predicted.values.by.tree.permuted.i <- vector("list",ntree)
+        training.error.permuted.difference <- rep(NA,p)
+        for(i in 1:p){
+          for(j in 1:ntree){
+            predicted.values.by.tree.permuted.i[[j]] <- matrix(predicted.values.by.tree.permuted[[j]][,i])
+          }
+          results.i <- numerical.predicted.value.and.error(predicted.values.by.tree.permuted.i,y,wt)
+          training.error.permuted.difference[i] <- results.i[[2]][[2]]-training.set.results[[2]][[2]]
+        }
+        breiman.importance.rank <- rank(-1*training.error.permuted.difference,ties.method="min")
+        
 	#if test set and training set are identical, return NA for the test set.        
 	test.set.error<-NA #Default value if test and training set identical
 	test.set.overall.pred.values<-NA #Default value if test and training set identical
@@ -58,10 +71,12 @@ numerical.predictions<- function(predicted.values.by.tree,predicted.test.set.val
 		 Predicted.Test.Set.Values<-NA
 		 Test.Set.Error<-NA     	
 	}
-	numerical.results<-list(list("Traing Set Error:", training.set.results[[2]][[2]]),
+	numerical.results<-list(list("Traininng Set Error:", training.set.results[[2]][[2]]),
   						  list("Predicted Training Set Values:", training.set.results[[1]][[2]]),
   						  list("Predicted Test Set Values",Predicted.Test.Set.Values),
-  						  list("Test Set Error:",Test.Set.Error))
+  						  list("Test Set Error:",Test.Set.Error),
+                                list("Training Error Permuted Difference",training.error.permuted.difference),
+                                list("Breiman Importance Rank",breiman.importance.rank))
 	return(numerical.results)
 	}
 	

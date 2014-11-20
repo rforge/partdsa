@@ -225,7 +225,11 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     predicted.test.set.values.by.tree<-lapply(tree.results,'[[',3)
     first.partition.with.var.by.tree<-lapply(tree.results,'[[',4)
     variable.penetrance.by.tree<-lapply(tree.results,'[[',5)
-
+    #For Breiman importance, should be a list of n by p matrices
+    predicted.values.by.tree.permuted <- lapply(tree.results,'[[',6)
+    #For partial derivative importance, should be a list of p vectors
+    partial.derivative.error <- lapply(tree.results,'[[',7)
+    
     first.partition.with.var.on.average <- Reduce("+", first.partition.with.var.by.tree) /
                                            length(first.partition.with.var.by.tree)
     var.importance.list<-as.list(first.partition.with.var.on.average)
@@ -233,12 +237,15 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
     variable.penetrance.on.average <- Reduce("+", variable.penetrance.by.tree) /
                                       length(variable.penetrance.by.tree)
     var.penetrance.list <- as.list(variable.penetrance.on.average)
-
+    partial.derivative.on.average <- Reduce("+", partial.derivative.error) / length(partial.derivative.error)
+    partial.derivative.rank <- rank(-1*(partial.derivative.on.average),ties.method="min")
+    
     if (is.factor(y)) { #this is the categorical case
       categorical.results <- categorical.predictions(predicted.values.by.tree=predicted.values.by.tree,
                                                      predicted.test.set.values.by.tree=predicted.test.set.values.by.tree,
                                                      y=y, y.test=y.test, x=x, x.test=x.test,
-                                                     y.original=y.original, y.test.original=y.test.original)
+                                                     y.original=y.original, y.test.original=y.test.original,
+                                                     predicted.values.by.tree.permuted=predicted.values.by.tree.permuted)
     } else if (inherits(y, "Surv")) {
       # This will be for survival
       stop('not implemented yet')
@@ -246,7 +253,8 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       # must be the numeric case
       numerical.results <- numerical.predictions(predicted.values.by.tree=predicted.values.by.tree,
                                                  predicted.test.set.values.by.tree=predicted.test.set.values.by.tree,
-                                                 y=y, y.test=y.test, x=x, x.test=x.test, wt=wt, wt.test=wt.test)
+                                                 y=y, y.test=y.test, x=x, x.test=x.test, wt=wt, wt.test=wt.test,
+                                                 predicted.values.by.tree.permuted)
     }
 
     if (is.null(names(x))) {
@@ -280,11 +288,16 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
                       numerical.results[[4]][[2]],
                       var.importance.list,
                       var.penetrance.list,
-                      tree.prediction.rules)
+                      tree.prediction.rules,
+                      numerical.results[[5]][[2]],
+                      numerical.results[[6]][[2]],
+                      partial.derivative.on.average,
+                      partial.derivative.rank)
 
       names(results) <- list("Training.Set.Error", "Predicted.Training.Set.Values",
                              "Predicted.Test.Set.Values", "Test.Set.Error", "VIMP",
-                             "Variable.Penetrance", "Prediction.Rules")
+                             "Variable.Penetrance", "Prediction.Rules","Breiman.Training.Error",
+                             "Breiman.Rank","Partial.Derivative.Error","Partial.Derivative.Rank")
     }
     class(results)<-('LeafyDSA')
   } else if(control$boost == 1 ){  #Start Boosting
