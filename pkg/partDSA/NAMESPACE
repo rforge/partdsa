@@ -12,13 +12,8 @@ S3method(print, LeafyDSA)
 S3method(print, LeafyPredictions)
 S3method(showDSA, dsa)
 S3method(showDSA, character)
-importFrom(‘parallel’,makePSOCKcluster)
-importFrom(‘parallel’,clusterCALL)
-importFrom(‘parallel’,clusterApplyLB)
-importFrom(‘parallel’,stopCluster)
-importFrom(‘parallel’,mclapply)
-
-
-
-
-
+importFrom(parallel,makePSOCKcluster)
+importFrom(parallel,clusterCall)
+importFrom(parallel,clusterApplyLB)
+importFrom(parallel,stopCluster)
+importFrom(parallel,mclapply)
