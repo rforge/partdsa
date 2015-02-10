@@ -185,7 +185,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
       y.test <- ConvertFactorsToNumeric(y.test.original)
     }
 
-    if (missing(sleigh) || ! require('parallel',quietly=TRUE) ||
+    if (missing(sleigh) || ! requireNamespace('parallel',quietly=TRUE) ||
         (is.numeric(sleigh) && sleigh <= 1)) {
       # Use lapply
       worker.init(lib.loc=NULL, x, -1, wt, y)
@@ -365,7 +365,7 @@ partDSA <- function(x, y, wt=rep(1, nrow(x)), x.test=x, y.test=y, wt.test,
         grp.delt <- sample(rep(1:vfold, length=nrow(x)), nrow(x), replace=F)
       }
 
-      if (missing(sleigh) || ! require('parallel', quietly=TRUE) ||
+      if (missing(sleigh) || ! requireNamespace('parallel', quietly=TRUE) ||
           (is.numeric(sleigh) && sleigh <= 1)) {
         # Use lapply
         worker.init(lib.loc=NULL, x, grp.delt, wt, y)

@@ -1,6 +1,6 @@
 Package: partDSA
 Type: Package
-Title: Partitioning using deletion, substitution, and addition moves
+Title: Partitioning Using Deletion, Substitution, and Addition Moves
 Version: 0.9.10
 Author: Annette Molinaro <annette.molinaro@ucsf.edu>,
         Adam Olshen <olshena@biostat.ucsf.edu>,
@@ -8,7 +8,7 @@ Author: Annette Molinaro <annette.molinaro@ucsf.edu>,
         Gregory Ryslik <gregory.ryslik@yale.edu>,
         Steve Weston <stephen.weston@yale.com>
 Maintainer: Annette Molinaro <annette.molinaro@ucsf.edu>
-Description: partDSA is a novel tool for generating a piecewise
+Description: This package provides a novel tool for generating a piecewise
         constant estimation list of increasingly complex predictors
         based on an intensive and comprehensive search over the entire
         covariate space.
